@@ -118,9 +118,6 @@ automatically-unhide-macos-hidden-apps = true
     alt-equal = 'resize smart +50'
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#workspace
-    alt-1 = 'workspace 1'
-    alt-2 = 'workspace 2'
-    alt-3 = 'workspace 3'
     alt-w = 'workspace W'
     alt-e = 'workspace E'
     alt-r = 'workspace R'
@@ -132,9 +129,6 @@ automatically-unhide-macos-hidden-apps = true
     alt-c = 'workspace C'
 
     # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
-    alt-shift-1 = 'move-node-to-workspace 1'
-    alt-shift-2 = 'move-node-to-workspace 2'
-    alt-shift-3 = 'move-node-to-workspace 3'
     alt-shift-w = 'move-node-to-workspace W'
     alt-shift-e = 'move-node-to-workspace E'
     alt-shift-r = 'move-node-to-workspace R'
@@ -202,9 +196,6 @@ automatically-unhide-macos-hidden-apps = true
     #shift-down = ['volume set 0', 'mode main']
 
 [workspace-to-monitor-force-assignment]
-1 = ['secondary','main']
-2 = ['secondary','main']
-3 = ['secondary','main']
 W = ['secondary','main']
 E = ['secondary','main']
 R = ['secondary','main']
