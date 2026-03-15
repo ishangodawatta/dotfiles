@@ -62,6 +62,11 @@ INSTALL_CHATGPT=false
 INSTALL_ADB=false
 INSTALL_SCRCPY=false
 INSTALL_BORDERS=false
+INSTALL_STARSHIP=false
+COPY_STARSHIP_CONFIG=false
+INSTALL_FZF=false
+INSTALL_ZOXIDE=false
+INSTALL_RIPGREP=false
 INSTALL_LLAMACPP=false
 INSTALL_SHOTTR=false
 INSTALL_WINDOWS_APP=false
@@ -344,6 +349,52 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
         fi
     else
         echo "✅ scrcpy already installed"
+    fi
+
+    # Check starship
+    if ! command -v starship &>/dev/null; then
+        if prompt_yes_no "Install starship (shell prompt)?"; then
+            INSTALL_STARSHIP=true
+            if [ -f ".config/starship.toml" ]; then
+                if prompt_yes_no "   Copy starship config from dotfiles?"; then
+                    COPY_STARSHIP_CONFIG=true
+                fi
+            fi
+        fi
+    else
+        echo "starship already installed"
+        if [ -f ".config/starship.toml" ]; then
+            if prompt_yes_no "Copy starship config from dotfiles?"; then
+                COPY_STARSHIP_CONFIG=true
+            fi
+        fi
+    fi
+
+    # Check fzf
+    if ! command -v fzf &>/dev/null; then
+        if prompt_yes_no "Install fzf (fuzzy finder)?"; then
+            INSTALL_FZF=true
+        fi
+    else
+        echo "fzf already installed"
+    fi
+
+    # Check zoxide
+    if ! command -v zoxide &>/dev/null; then
+        if prompt_yes_no "Install zoxide (smart directory jumper)?"; then
+            INSTALL_ZOXIDE=true
+        fi
+    else
+        echo "zoxide already installed"
+    fi
+
+    # Check ripgrep
+    if ! command -v rg &>/dev/null; then
+        if prompt_yes_no "Install ripgrep (fast code search)?"; then
+            INSTALL_RIPGREP=true
+        fi
+    else
+        echo "ripgrep already installed"
     fi
 
     # Check borders
@@ -845,6 +896,71 @@ if [[ "$INSTALL_SCRCPY" == true ]]; then
     echo "✅ scrcpy installed"
 fi
 
+# starship
+if [[ "$INSTALL_STARSHIP" == true ]]; then
+    echo "Installing starship..."
+    brew install starship
+
+    # Add starship init to .zshrc if not already present
+    if ! grep -q 'starship init zsh' ~/.zshrc 2>/dev/null; then
+        echo '' >> ~/.zshrc
+        echo '# Starship prompt (remove this line to revert to default zsh prompt)' >> ~/.zshrc
+        echo 'eval "$(starship init zsh)"' >> ~/.zshrc
+    fi
+
+    echo "starship installed"
+fi
+
+# Copy starship config
+if [[ "$COPY_STARSHIP_CONFIG" == true ]]; then
+    echo "Copying starship config..."
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+    if [ -f "$SCRIPT_DIR/.config/starship.toml" ]; then
+        cp "$SCRIPT_DIR/.config/starship.toml" ~/.config/starship.toml
+        echo "starship config copied to ~/.config/starship.toml"
+    else
+        echo "starship config file not found in dotfiles"
+    fi
+fi
+
+# fzf
+if [[ "$INSTALL_FZF" == true ]]; then
+    echo "Installing fzf..."
+    brew install fzf
+
+    # Add fzf shell integration to .zshrc if not already present
+    if ! grep -q 'fzf --zsh' ~/.zshrc 2>/dev/null; then
+        echo '' >> ~/.zshrc
+        echo '# fzf keybindings and completion (Ctrl+R = history, Ctrl+T = files)' >> ~/.zshrc
+        echo 'source <(fzf --zsh)' >> ~/.zshrc
+    fi
+
+    echo "fzf installed"
+fi
+
+# zoxide
+if [[ "$INSTALL_ZOXIDE" == true ]]; then
+    echo "Installing zoxide..."
+    brew install zoxide
+
+    # Add zoxide init to .zshrc if not already present
+    if ! grep -q 'zoxide init zsh' ~/.zshrc 2>/dev/null; then
+        echo '' >> ~/.zshrc
+        echo '# zoxide (use z instead of cd, zi for interactive)' >> ~/.zshrc
+        echo 'eval "$(zoxide init zsh)"' >> ~/.zshrc
+    fi
+
+    echo "zoxide installed"
+fi
+
+# ripgrep
+if [[ "$INSTALL_RIPGREP" == true ]]; then
+    echo "Installing ripgrep..."
+    brew install ripgrep
+    echo "ripgrep installed"
+fi
+
 # borders
 if [[ "$INSTALL_BORDERS" == true ]]; then
     echo "🔲 Installing borders..."
@@ -958,7 +1074,11 @@ ls /Applications/ 2>/dev/null | grep -qi "logioptionsplus" && echo "✅ Logi Opt
 ls /Applications/ 2>/dev/null | grep -qi "chatgpt" && echo "✅ ChatGPT: Installed"
 command -v adb >/dev/null && echo "✅ Android Platform Tools (ADB): $(adb --version | head -n1)"
 command -v scrcpy >/dev/null && echo "✅ scrcpy: $(scrcpy --version 2>&1 | head -n1)"
-command -v borders >/dev/null && echo "✅ borders: Installed"
+command -v starship >/dev/null && echo "starship: $(starship --version | head -n1)"
+command -v fzf >/dev/null && echo "fzf: $(fzf --version | head -n1)"
+command -v zoxide >/dev/null && echo "zoxide: $(zoxide --version | head -n1)"
+command -v rg >/dev/null && echo "ripgrep: $(rg --version | head -n1)"
+command -v borders >/dev/null && echo "borders: Installed"
 command -v llama-cli >/dev/null && echo "✅ llama.cpp: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "shottr" && echo "✅ Shottr: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "windows app" && echo "✅ Windows App: Installed"

@@ -1,46 +1,72 @@
+# Starship prompt config
+# Docs: https://starship.rs/config/
+# To revert: delete this file and remove the starship init line from ~/.zshrc
+
+# Git status symbols:
+#   ? = untracked files
+#   ! = modified files
+#   + = staged files
+#   > = ahead of remote
+#   < = behind remote
+#   * = stashed changes
+
 format = """
-$username\
-$hostname\
 $directory\
 $git_branch\
 $git_state\
 $git_status\
+$python\
+$nodejs\
+$rust\
+$c\
+$dotnet\
 $cmd_duration\
 $line_break\
-$python\
 $character"""
 
-[directory]
-style = "blue"
-
 [character]
-success_symbol = "[❯](purple)"
-error_symbol = "[❯](red)"
-vimcmd_symbol = "[❮](green)"
+success_symbol = "[>](bold #d4a656)"
+error_symbol = "[>](bold #c75450)"
+vimcmd_symbol = "[<](bold #8faf6e)"
+
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+style = "bold #e8c882"
 
 [git_branch]
-format = "[$branch]($style)"
-style = "bright-black"
-
-[git_status]
-format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](218) ($ahead_behind$stashed)]($style)"
-style = "cyan"
-conflicted = "​"
-untracked = "​"
-modified = "​"
-staged = "​"
-renamed = "​"
-deleted = "​"
-stashed = "≡"
+format = "[$branch]($style) "
+style = "bold #b8a070"
 
 [git_state]
 format = '\([$state( $progress_current/$progress_total)]($style)\) '
-style = "bright-black"
+style = "#a08060"
 
-[cmd_duration]
-format = "[$duration]($style) "
-style = "yellow"
+[git_status]
+format = '([$all_status$ahead_behind]($style) )'
+style = "bold #c75450"
 
 [python]
-format = "[$virtualenv]($style) "
-style = "bright-black"
+format = '[py $version( \($virtualenv\))]($style) '
+style = "#d4a656"
+
+[nodejs]
+format = '[node $version]($style) '
+style = "#8faf6e"
+
+[rust]
+format = '[rs $version]($style) '
+style = "#c78656"
+
+[c]
+format = '[c $version]($style) '
+style = "#7ea8c4"
+
+[dotnet]
+format = '[.net $version]($style) '
+style = "#6eaab8"
+
+[cmd_duration]
+min_time = 2_000
+format = '[$duration]($style) '
+style = "#a08060"
