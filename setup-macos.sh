@@ -69,6 +69,10 @@ COPY_STARSHIP_CONFIG=false
 INSTALL_FZF=false
 INSTALL_ZOXIDE=false
 INSTALL_RIPGREP=false
+INSTALL_BAT=false
+INSTALL_EZA=false
+INSTALL_LAZYGIT=false
+INSTALL_DELTA=false
 INSTALL_LLAMACPP=false
 INSTALL_SHOTTR=false
 INSTALL_WINDOWS_APP=false
@@ -416,6 +420,42 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
         fi
     else
         echo "ripgrep already installed"
+    fi
+
+    # Check bat
+    if ! command -v bat &>/dev/null; then
+        if prompt_yes_no "Install bat (cat clone with syntax highlighting)?"; then
+            INSTALL_BAT=true
+        fi
+    else
+        echo "bat already installed"
+    fi
+
+    # Check eza
+    if ! command -v eza &>/dev/null; then
+        if prompt_yes_no "Install eza (modern ls replacement)?"; then
+            INSTALL_EZA=true
+        fi
+    else
+        echo "eza already installed"
+    fi
+
+    # Check lazygit
+    if ! command -v lazygit &>/dev/null; then
+        if prompt_yes_no "Install lazygit (terminal UI for git)?"; then
+            INSTALL_LAZYGIT=true
+        fi
+    else
+        echo "lazygit already installed"
+    fi
+
+    # Check delta
+    if ! command -v delta &>/dev/null; then
+        if prompt_yes_no "Install delta (git diff viewer)?"; then
+            INSTALL_DELTA=true
+        fi
+    else
+        echo "delta already installed"
     fi
 
     # Check borders
@@ -1004,6 +1044,44 @@ if [[ "$INSTALL_RIPGREP" == true ]]; then
     echo "ripgrep installed"
 fi
 
+# bat
+if [[ "$INSTALL_BAT" == true ]]; then
+    echo "Installing bat..."
+    brew install bat
+    echo "bat installed"
+fi
+
+# eza
+if [[ "$INSTALL_EZA" == true ]]; then
+    echo "Installing eza..."
+    brew install eza
+    echo "eza installed"
+fi
+
+# lazygit
+if [[ "$INSTALL_LAZYGIT" == true ]]; then
+    echo "Installing lazygit..."
+    brew install lazygit
+    echo "lazygit installed"
+fi
+
+# delta
+if [[ "$INSTALL_DELTA" == true ]]; then
+    echo "Installing delta..."
+    brew install git-delta
+
+    # Configure git to use delta as pager
+    git config --global core.pager delta
+    git config --global interactive.diffFilter "delta --color-only"
+    git config --global delta.navigate true
+    git config --global delta.side-by-side true
+    git config --global delta.line-numbers true
+    git config --global merge.conflictstyle diff3
+    git config --global diff.colorMoved default
+
+    echo "delta installed and configured as git pager"
+fi
+
 # borders
 if [[ "$INSTALL_BORDERS" == true ]]; then
     echo "🔲 Installing borders..."
@@ -1121,6 +1199,10 @@ command -v starship >/dev/null && echo "starship: $(starship --version | head -n
 command -v fzf >/dev/null && echo "fzf: $(fzf --version | head -n1)"
 command -v zoxide >/dev/null && echo "zoxide: $(zoxide --version | head -n1)"
 command -v rg >/dev/null && echo "ripgrep: $(rg --version | head -n1)"
+command -v bat >/dev/null && echo "bat: $(bat --version | head -n1)"
+command -v eza >/dev/null && echo "eza: $(eza --version | head -n1)"
+command -v lazygit >/dev/null && echo "lazygit: $(lazygit --version | head -n1)"
+command -v delta >/dev/null && echo "delta: $(delta --version | head -n1)"
 command -v borders >/dev/null && echo "borders: Installed"
 command -v llama-cli >/dev/null && echo "✅ llama.cpp: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "shottr" && echo "✅ Shottr: Installed"
