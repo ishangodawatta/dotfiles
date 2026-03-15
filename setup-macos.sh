@@ -62,6 +62,8 @@ INSTALL_CHATGPT=false
 INSTALL_ADB=false
 INSTALL_SCRCPY=false
 INSTALL_BORDERS=false
+INSTALL_KARABINER=false
+COPY_KARABINER_CONFIG=false
 INSTALL_STARSHIP=false
 COPY_STARSHIP_CONFIG=false
 INSTALL_FZF=false
@@ -349,6 +351,25 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
         fi
     else
         echo "✅ scrcpy already installed"
+    fi
+
+    # Check Karabiner-Elements
+    if ! ls /Applications/ 2>/dev/null | grep -qi "karabiner"; then
+        if prompt_yes_no "Install Karabiner-Elements (keyboard remapper)?"; then
+            INSTALL_KARABINER=true
+            if [ -f ".config/karabiner/karabiner.json" ]; then
+                if prompt_yes_no "   Copy Karabiner config from dotfiles?"; then
+                    COPY_KARABINER_CONFIG=true
+                fi
+            fi
+        fi
+    else
+        echo "Karabiner-Elements already installed"
+        if [ -f ".config/karabiner/karabiner.json" ]; then
+            if prompt_yes_no "Copy Karabiner config from dotfiles?"; then
+                COPY_KARABINER_CONFIG=true
+            fi
+        fi
     fi
 
     # Check starship
@@ -894,6 +915,28 @@ if [[ "$INSTALL_SCRCPY" == true ]]; then
     echo "📱 Installing scrcpy..."
     brew install scrcpy
     echo "✅ scrcpy installed"
+fi
+
+# Karabiner-Elements
+if [[ "$INSTALL_KARABINER" == true ]]; then
+    echo "Installing Karabiner-Elements..."
+    brew install --cask karabiner-elements
+    echo "Karabiner-Elements installed"
+    echo "NOTE: Open Karabiner-Elements and grant accessibility permissions"
+fi
+
+# Copy Karabiner config
+if [[ "$COPY_KARABINER_CONFIG" == true ]]; then
+    echo "Copying Karabiner config..."
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    mkdir -p ~/.config/karabiner
+
+    if [ -f "$SCRIPT_DIR/.config/karabiner/karabiner.json" ]; then
+        cp "$SCRIPT_DIR/.config/karabiner/karabiner.json" ~/.config/karabiner/karabiner.json
+        echo "Karabiner config copied to ~/.config/karabiner/karabiner.json"
+    else
+        echo "Karabiner config file not found in dotfiles"
+    fi
 fi
 
 # starship
