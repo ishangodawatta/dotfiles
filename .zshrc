@@ -1,3 +1,9 @@
+# Aliases
+alias c=clear
+alias vim=nvim
+alias srcvenv='source ./venv/bin/activate'
+alias srcenv='export $(cat .env | xargs)'
+
 # Pyenv wrapper (auto-rehash after install/uninstall)
 pyenv() {
   command pyenv "$@"

@@ -6,7 +6,6 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # Pyenv (fast path -- no eval, just shims)
 export PYENV_ROOT="$HOME/.pyenv"
-[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
 export PATH="$PYENV_ROOT/shims:$PATH"
 
 # NVM (lazy-loaded for speed)
@@ -17,9 +16,9 @@ nvm() {
   [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
   nvm "$@"
 }
-node() { nvm --silent; unfunction node 2>/dev/null; node "$@"; }
-npm()  { nvm --silent; unfunction npm 2>/dev/null; npm "$@"; }
-npx()  { nvm --silent; unfunction npx 2>/dev/null; npx "$@"; }
+node() { unfunction node 2>/dev/null; nvm >/dev/null 2>&1; command node "$@"; }
+npm()  { unfunction npm 2>/dev/null; nvm >/dev/null 2>&1; command npm "$@"; }
+npx()  { unfunction npx 2>/dev/null; nvm >/dev/null 2>&1; command npx "$@"; }
 
 # Extra PATH entries
 export PATH="$HOME/src:$PATH"

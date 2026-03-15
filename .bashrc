@@ -116,8 +116,3 @@ if ! shopt -oq posix; then
   fi
 fi
 
-# Add neovim executable to PATH
-export PATH="$PATH:/opt/nvim-linux64/bin"
-
-# Dotfiles management
-alias dotfiles='git --git-dir=/home/tom/.dotfiles/ --work-tree=/'

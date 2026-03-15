@@ -1,4 +1,0 @@
-export PATH=$PATH:/Users/tomcas01/nvim-macos-arm64/bin
-
-# adb, etc.
-export PATH=$PATH:~/platform-tools
