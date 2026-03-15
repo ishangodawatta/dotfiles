@@ -32,12 +32,17 @@
     "allowNetworkAccess": true,
     "allowShellAccess": true
   },
+  "enabledPlugins": {
+    "pyright-lsp@claude-plugins-official": true
+  },
   "alwaysThinkingEnabled": true,
+  "effortLevel": "high",
   "preferences": {
     "autoSave": true,
     "showLineNumbers": true,
     "tabSize": 2,
     "insertSpaces": true,
     "wordWrap": true
-  }
+  },
+  "voiceEnabled": true
 }

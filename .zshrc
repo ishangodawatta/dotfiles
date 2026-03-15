@@ -5,6 +5,8 @@ alias ls=eza
 alias cat=bat
 alias srcvenv='source ./.venv/bin/activate'
 alias srcenv='export $(command cat .env | xargs)'
+alias mysql-start='brew services start mysql@8.4'
+alias mysql-stop='brew services stop mysql@8.4'
 
 # Pyenv wrapper (auto-rehash after install/uninstall)
 pyenv() {
