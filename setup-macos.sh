@@ -80,6 +80,7 @@ INSTALL_DOCKER=false
 COPY_GHOSTTY_CONFIG=false
 COPY_AEROSPACE_CONFIG=false
 DISABLE_SPOTLIGHT=false
+DISABLE_MISSION_CONTROL_KEYS=false
 MOVE_DOCK_LEFT=false
 
 # Check Xcode
@@ -195,16 +196,21 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
         if prompt_yes_no "🔍 Install Raycast (productivity launcher)?"; then
             INSTALL_RAYCAST=true
             # Ask about disabling Spotlight if installing Raycast
-            if prompt_yes_no "   Disable Spotlight keyboard shortcut (Cmd+Space)?"; then
+            if prompt_yes_no "   Disable Spotlight entirely (indexing, agents, shortcut)?"; then
                 DISABLE_SPOTLIGHT=true
             fi
         fi
     else
         echo "✅ Raycast already installed"
         # Ask about Spotlight even if Raycast is already installed
-        if prompt_yes_no "🔍 Disable Spotlight keyboard shortcut (Cmd+Space)?"; then
+        if prompt_yes_no "Disable Spotlight entirely (indexing, agents, shortcut)?"; then
             DISABLE_SPOTLIGHT=true
         fi
+    fi
+
+    # Check Mission Control shortcuts
+    if prompt_yes_no "Disable Mission Control keyboard shortcuts (frees Ctrl+Left/Right for word jumping)?"; then
+        DISABLE_MISSION_CONTROL_KEYS=true
     fi
 
     # Check Ghostty
@@ -1118,12 +1124,35 @@ if [[ "$DISABLE_SPOTLIGHT" == true ]] || [[ "$MOVE_DOCK_LEFT" == true ]]; then
     echo "⚙️  Configuring macOS settings..."
 fi
 
-# Disable Spotlight keyboard shortcut
+# Disable Spotlight
 if [[ "$DISABLE_SPOTLIGHT" == true ]]; then
-    echo "🔍 Disabling Spotlight keyboard shortcut..."
-    # Disable Spotlight Show Finder search window (Cmd+Space)
+    echo "Disabling Spotlight..."
+
+    # Disable Spotlight keyboard shortcut (Cmd+Space)
     defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 64 "{ enabled = 0; value = { parameters = (65535, 49, 1048576); type = 'standard'; }; }"
-    echo "✅ Spotlight keyboard shortcut disabled (may require logout to take effect)"
+
+    # Disable Spotlight indexing on all volumes
+    sudo mdutil -a -i off
+
+    # Disable Spotlight launch agents
+    launchctl disable "gui/$(id -u)/com.apple.Spotlight"
+    launchctl disable "gui/$(id -u)/com.apple.corespotlightd"
+    launchctl disable "gui/$(id -u)/com.apple.corespotlightservice"
+    launchctl disable "gui/$(id -u)/com.apple.spotlightknowledged"
+    launchctl disable "gui/$(id -u)/com.apple.spotlightknowledged.importer"
+    launchctl disable "gui/$(id -u)/com.apple.spotlightknowledged.updater"
+
+    echo "Spotlight fully disabled (requires logout to take effect)"
+fi
+
+# Disable Mission Control keyboard shortcuts
+if [[ "$DISABLE_MISSION_CONTROL_KEYS" == true ]]; then
+    echo "Disabling Mission Control shortcuts..."
+    defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 79 '{ enabled = 0; }'
+    defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 80 '{ enabled = 0; }'
+    defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 81 '{ enabled = 0; }'
+    defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 82 '{ enabled = 0; }'
+    echo "Mission Control shortcuts disabled (requires logout to take effect)"
 fi
 
 # Move Dock to left
