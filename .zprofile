@@ -8,17 +8,14 @@ eval "$(/opt/homebrew/bin/brew shellenv)"
 export PYENV_ROOT="$HOME/.pyenv"
 export PATH="$PYENV_ROOT/shims:$PATH"
 
-# NVM (lazy-loaded for speed)
+# NVM (node/npm always in PATH, nvm command lazy-loaded)
 export NVM_DIR="$HOME/.nvm"
+export PATH="$NVM_DIR/versions/node/v24.10.0/bin:$PATH"
 nvm() {
-  unfunction nvm node npm npx 2>/dev/null
+  unfunction nvm 2>/dev/null
   [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
   nvm "$@"
 }
-node() { unfunction node 2>/dev/null; nvm >/dev/null 2>&1; command node "$@"; }
-npm()  { unfunction npm 2>/dev/null; nvm >/dev/null 2>&1; command npm "$@"; }
-npx()  { unfunction npx 2>/dev/null; nvm >/dev/null 2>&1; command npx "$@"; }
 
 # Extra PATH entries
 export PATH="$HOME/src:$PATH"
