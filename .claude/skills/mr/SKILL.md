@@ -17,7 +17,7 @@ glab mr create --repo "uxperf/projects/pyfetto-mono" --title "UXPERF-XXXX: descr
 Derive from branch name. Branch `UXPERF-1234/fix-whatever-feature` becomes title `UXPERF-1234: fix whatever feature`.
 
 ## MR description format
-Plain bullet points with `-`, no markdown headers. Each bullet describes one logical change.
+Start the description with a Jira link: `https://jira.arm.com/browse/UXPERF-XXXX` (derived from the branch ticket tag), followed by a blank line, then plain bullet points with `-`. No markdown headers. Each bullet describes one logical change.
 
 ## Commit tagging
 All commits on a feature branch must be prefixed with the ticket tag: `UXPERF-XXXX: fix/refactor/feat/chore: message`.
