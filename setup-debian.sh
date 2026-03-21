@@ -991,6 +991,19 @@ if [[ "$LINK_DOTFILES" == true ]]; then
     mkdir -p "$HOME/.agents"
     link_dir "$HOME/src/obsidian/projects/claude/skills" "$HOME/.agents/skills"
 
+    # Claude Code plugins (install from manifest if claude CLI is available)
+    if command -v claude &>/dev/null && [[ -f "$HOME/src/obsidian/projects/claude/plugins.txt" ]]; then
+        echo "Installing Claude Code plugins..."
+        while IFS= read -r line; do
+            [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
+            if [[ "$line" =~ ^marketplace\ (.+)$ ]]; then
+                claude plugin marketplace add "${BASH_REMATCH[1]}" 2>/dev/null || true
+            elif [[ "$line" =~ ^plugin\ (.+)$ ]]; then
+                claude plugin install "${BASH_REMATCH[1]}" --scope user 2>/dev/null || true
+            fi
+        done < "$HOME/src/obsidian/projects/claude/plugins.txt"
+    fi
+
     echo "Dotfiles linked"
 fi
 

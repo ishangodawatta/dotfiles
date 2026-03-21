@@ -84,5 +84,21 @@ Link-Item -Source (Join-Path $VaultClaude "CLAUDE.md") -Dest (Join-Path $CodexDi
 New-Item -ItemType Directory -Path $AgentsDir -Force | Out-Null
 Link-Item -Source (Join-Path $VaultClaude "skills") -Dest (Join-Path $AgentsDir "skills") -IsDir
 
+# Claude Code plugins (install from manifest if claude CLI is available)
+$PluginsFile = Join-Path $VaultClaude "plugins.txt"
+if ((Get-Command "claude" -ErrorAction SilentlyContinue) -and (Test-Path $PluginsFile)) {
+    Write-Host ""
+    Write-Host "Installing Claude Code plugins..." -ForegroundColor Cyan
+    Get-Content $PluginsFile | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -match "^#" -or [string]::IsNullOrEmpty($line)) { return }
+        if ($line -match "^marketplace\s+(.+)$") {
+            claude plugin marketplace add $Matches[1] 2>$null
+        } elseif ($line -match "^plugin\s+(.+)$") {
+            claude plugin install $Matches[1] --scope user 2>$null
+        }
+    }
+}
+
 Write-Host ""
 Write-Host "Setup complete!" -ForegroundColor Green
