@@ -10,12 +10,8 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
     exit 1
 fi
 
-# Obsidian vault path (required argument)
-OBSIDIAN_VAULT="${1:?Usage: ./setup-macos.sh /path/to/obsidian/vault}"
-if [[ ! -d "$OBSIDIAN_VAULT/projects" ]]; then
-    echo "Error: $OBSIDIAN_VAULT/projects not found -- is this the right vault path?"
-    exit 1
-fi
+# Obsidian vault path (optional argument, required for linking dotfiles)
+OBSIDIAN_VAULT="${1:-}"
 
 # Function to prompt for yes/no
 prompt_yes_no() {
@@ -85,6 +81,7 @@ INSTALL_SHOTTR=false
 INSTALL_WINDOWS_APP=false
 INSTALL_MYSQL=false
 INSTALL_DOCKER=false
+INSTALL_BITWARDEN=false
 LINK_DOTFILES=false
 DISABLE_SPOTLIGHT=false
 DISABLE_MISSION_CONTROL_KEYS=false
@@ -576,6 +573,15 @@ else
     echo "✅ Claude Code CLI already installed"
 fi
 
+# Check Bitwarden CLI
+if ! command -v bw &>/dev/null; then
+    if prompt_yes_no "🔐 Install Bitwarden CLI?"; then
+        INSTALL_BITWARDEN=true
+    fi
+else
+    echo "✅ Bitwarden CLI already installed"
+fi
+
 # Check OpenAI Codex CLI
 INSTALL_CODEX=false
 if ! command -v codex &>/dev/null; then
@@ -781,6 +787,13 @@ if [[ "$INSTALL_CLAUDE_CODE" == true ]]; then
         echo "❌ Claude Code CLI installation failed"
         exit 1
     fi
+fi
+
+# Install Bitwarden CLI
+if [[ "$INSTALL_BITWARDEN" == true ]]; then
+    echo "🔐 Installing Bitwarden CLI..."
+    brew install bitwarden-cli
+    echo "✅ Bitwarden CLI installed"
 fi
 
 # Install OpenAI Codex CLI
@@ -1193,6 +1206,15 @@ if [[ "$LINK_DOTFILES" == true ]]; then
     fi
 
     # Obsidian vault symlink (stable path for all tools)
+    if [[ -z "$OBSIDIAN_VAULT" ]]; then
+        echo "Skipping Obsidian/Claude/Codex linking -- no vault path provided"
+        echo "  Re-run with: ./setup-macos.sh /path/to/obsidian/vault"
+    elif [[ ! -d "$OBSIDIAN_VAULT/projects" ]]; then
+        echo "Error: $OBSIDIAN_VAULT/projects not found -- is this the right vault path?"
+        exit 1
+    fi
+
+    if [[ -n "$OBSIDIAN_VAULT" && -d "$OBSIDIAN_VAULT/projects" ]]; then
     link_dir "$OBSIDIAN_VAULT" "$HOME/src/obsidian"
 
     # Claude Code config (all content lives in vault)
@@ -1232,6 +1254,8 @@ if [[ "$LINK_DOTFILES" == true ]]; then
             fi
         done < "$HOME/src/obsidian/projects/claude/plugins.txt"
     fi
+
+    fi # end vault-dependent linking
 
     echo "Dotfiles linked"
 fi

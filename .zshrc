@@ -17,6 +17,10 @@ pyenv() {
   fi
 }
 
+# Bitwarden CLI helpers
+bw-unlock() { export BW_SESSION=$(bw unlock --raw); }
+secret() { bw get password "$1"; }
+
 # fzf keybindings and completion (Ctrl+R = history, Ctrl+T = files)
 source <(fzf --zsh)
 
@@ -25,3 +29,4 @@ eval "$(zoxide init zsh)"
 
 # Starship prompt (must be last)
 eval "$(starship init zsh)"
+eval "$(/opt/homebrew/bin/brew shellenv)"
