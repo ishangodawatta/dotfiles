@@ -10,7 +10,7 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
     exit 1
 fi
 
-# Obsidian vault path (optional argument, required for linking dotfiles)
+# Obsidian vault path (can be passed as $1 or prompted interactively)
 OBSIDIAN_VAULT="${1:-}"
 
 # Function to prompt for yes/no
@@ -595,6 +595,22 @@ fi
 # Link dotfiles
 if prompt_yes_no "Link dotfiles from this repo to home directory?"; then
     LINK_DOTFILES=true
+fi
+
+# Check Obsidian vault (if not passed as argument)
+if [[ -z "$OBSIDIAN_VAULT" ]]; then
+    if [[ -L "$HOME/src/obsidian" ]]; then
+        current_target=$(readlink "$HOME/src/obsidian")
+        echo "✅ Obsidian vault already linked -> $current_target"
+        if prompt_yes_no "📓 Re-configure Obsidian vault path?"; then
+            read -p "   Enter Obsidian vault path [$current_target]: " OBSIDIAN_VAULT
+            OBSIDIAN_VAULT="${OBSIDIAN_VAULT:-$current_target}"
+        else
+            OBSIDIAN_VAULT="$current_target"
+        fi
+    elif prompt_yes_no "📓 Set up Obsidian vault (for Claude/Codex config)?"; then
+        read -p "   Enter Obsidian vault path: " OBSIDIAN_VAULT
+    fi
 fi
 
 # macOS Appearance Settings
