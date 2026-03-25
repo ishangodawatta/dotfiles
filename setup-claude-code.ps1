@@ -18,7 +18,6 @@ if (-not (Test-Path (Join-Path $ObsidianVault "projects"))) {
 $SrcObsidian = Join-Path $env:USERPROFILE "src\obsidian"
 $ClaudeDir = Join-Path $env:USERPROFILE ".claude"
 $CodexDir = Join-Path $env:USERPROFILE ".codex"
-$AgentsDir = Join-Path $env:USERPROFILE ".agents"
 $VaultClaude = Join-Path $ObsidianVault "projects\claude"
 
 function Link-Item {
@@ -79,10 +78,7 @@ if (Test-Path $pfClaudemd) {
 New-Item -ItemType Directory -Path $CodexDir -Force | Out-Null
 Link-Item -Source (Join-Path $VaultClaude "codex-config.toml") -Dest (Join-Path $CodexDir "config.toml")
 Link-Item -Source (Join-Path $VaultClaude "CLAUDE.md") -Dest (Join-Path $CodexDir "AGENTS.md")
-
-# Shared agent skills
-New-Item -ItemType Directory -Path $AgentsDir -Force | Out-Null
-Link-Item -Source (Join-Path $VaultClaude "skills") -Dest (Join-Path $AgentsDir "skills") -IsDir
+Link-Item -Source (Join-Path $VaultClaude "skills") -Dest (Join-Path $CodexDir "skills") -IsDir
 
 # Claude Code plugins (install from manifest if claude CLI is available)
 $PluginsFile = Join-Path $VaultClaude "plugins.txt"
