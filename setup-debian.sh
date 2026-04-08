@@ -1031,28 +1031,28 @@ if [[ "$LINK_DOTFILES" == true ]]; then
 
     # Claude Code config (all content lives in vault)
     mkdir -p "$HOME/.claude"
-    link_file "$HOME/src/obsidian/projects/claude/CLAUDE.md" "$HOME/.claude/CLAUDE.md"
-    link_file "$HOME/src/obsidian/projects/claude/settings.json" "$HOME/.claude/settings.json"
-    link_dir "$HOME/src/obsidian/projects/claude/skills" "$HOME/.claude/skills"
+    link_file "$HOME/src/obsidian/projects/agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
+    link_file "$HOME/src/obsidian/projects/agents/settings.json" "$HOME/.claude/settings.json"
+    link_dir "$HOME/src/obsidian/projects/agents/skills" "$HOME/.claude/skills"
 
     # Claude Code project memory (symlink memory dirs into vault)
     for project in pyfetto-mono chears-shadcn pyfetto-graphs learn; do
       claude_project_dir="$HOME/.claude/projects/-Users-$(whoami)-src-${project}"
       mkdir -p "$claude_project_dir"
-      link_dir "$HOME/src/obsidian/projects/claude/$project/memory" "$claude_project_dir/memory"
+      link_dir "$HOME/src/obsidian/projects/agents/$project/memory" "$claude_project_dir/memory"
     done
     # pyfetto-mono also has a project-scoped CLAUDE.md
-    link_file "$HOME/src/obsidian/projects/claude/pyfetto-mono/CLAUDE.md" \
+    link_file "$HOME/src/obsidian/projects/agents/pyfetto-mono/AGENTS.md" \
       "$HOME/.claude/projects/-Users-$(whoami)-src-pyfetto-mono/CLAUDE.md"
 
     # OpenAI Codex config (shares instructions and skills with Claude Code)
     mkdir -p "$HOME/.codex"
-    link_file "$HOME/src/obsidian/projects/claude/codex-config.toml" "$HOME/.codex/config.toml"
-    link_file "$HOME/src/obsidian/projects/claude/CLAUDE.md" "$HOME/.codex/AGENTS.md"
-    link_dir "$HOME/src/obsidian/projects/claude/skills" "$HOME/.codex/skills"
+    link_file "$HOME/src/obsidian/projects/agents/codex-config.toml" "$HOME/.codex/config.toml"
+    link_file "$HOME/src/obsidian/projects/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
+    link_dir "$HOME/src/obsidian/projects/agents/skills" "$HOME/.codex/skills"
 
     # Claude Code plugins (install from manifest if claude CLI is available)
-    if command -v claude &>/dev/null && [[ -f "$HOME/src/obsidian/projects/claude/plugins.txt" ]]; then
+    if command -v claude &>/dev/null && [[ -f "$HOME/src/obsidian/projects/agents/plugins.txt" ]]; then
       echo "Installing Claude Code plugins..."
       while IFS= read -r line; do
         [[ "$line" =~ ^#.*$ || -z "$line" ]] && continue
@@ -1061,7 +1061,7 @@ if [[ "$LINK_DOTFILES" == true ]]; then
         elif [[ "$line" =~ ^plugin\ (.+)$ ]]; then
           claude plugin install "${BASH_REMATCH[1]}" --scope user 2>/dev/null || true
         fi
-      done <"$HOME/src/obsidian/projects/claude/plugins.txt"
+      done <"$HOME/src/obsidian/projects/agents/plugins.txt"
     fi
 
   fi # end vault-dependent linking
