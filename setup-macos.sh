@@ -1227,21 +1227,34 @@ if [[ "$LINK_DOTFILES" == true ]]; then
   if [[ -n "$OBSIDIAN_VAULT" && -d "$OBSIDIAN_VAULT/projects" ]]; then
     link_dir "$OBSIDIAN_VAULT" "$HOME/src/obsidian"
 
+    # Detect broken symlinks from a previous setup run (e.g. after vault rename)
+    broken_links=$(find "$HOME/.claude" "$HOME/.codex" -type l ! -exec test -e {} \; -print 2>/dev/null || true)
+    if [[ -n "$broken_links" ]]; then
+      echo "WARNING: broken symlinks detected (will be replaced if new targets exist):"
+      echo "$broken_links" | sed 's/^/  /'
+    fi
+
     # Claude Code config (all content lives in vault)
     mkdir -p "$HOME/.claude"
     link_file "$HOME/src/obsidian/projects/agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
     link_file "$HOME/src/obsidian/projects/agents/settings.json" "$HOME/.claude/settings.json"
     link_dir "$HOME/src/obsidian/projects/agents/skills" "$HOME/.claude/skills"
 
-    # Claude Code project memory (symlink memory dirs into vault)
-    for project in pyfetto-mono chears-shadcn pyfetto-graphs learn; do
+    # Claude Code project memory + project-scoped instructions (auto-discovered from vault)
+    for project_path in "$HOME/src/obsidian/projects/agents"/*/; do
+      project=$(basename "$project_path")
+      # Skip non-project subdirs (skills, src, hidden)
+      [[ "$project" == "skills" || "$project" == "src" || "$project" == .* ]] && continue
+      # Only treat as a project if it has a memory/ dir
+      [[ -d "$project_path/memory" ]] || continue
       claude_project_dir="$HOME/.claude/projects/-Users-$(whoami)-src-${project}"
       mkdir -p "$claude_project_dir"
-      link_dir "$HOME/src/obsidian/projects/agents/$project/memory" "$claude_project_dir/memory"
+      link_dir "$project_path/memory" "$claude_project_dir/memory"
+      # Optional project-scoped instructions
+      if [[ -f "$project_path/AGENTS.md" ]]; then
+        link_file "$project_path/AGENTS.md" "$claude_project_dir/CLAUDE.md"
+      fi
     done
-    # pyfetto-mono also has a project-scoped CLAUDE.md
-    link_file "$HOME/src/obsidian/projects/agents/pyfetto-mono/AGENTS.md" \
-      "$HOME/.claude/projects/-Users-$(whoami)-src-pyfetto-mono/CLAUDE.md"
 
     # OpenAI Codex config (shares instructions and skills with Claude Code)
     mkdir -p "$HOME/.codex"
