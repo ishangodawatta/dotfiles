@@ -1045,6 +1045,7 @@ if [[ "$LINK_DOTFILES" == true ]]; then
     # Claude Code project memory + project-scoped instructions (auto-discovered from vault)
     for project_path in "$HOME/src/obsidian/projects/agents"/*/; do
       project=$(basename "$project_path")
+      project_path="${project_path%/}"  # strip trailing slash from glob
       # Skip non-project subdirs (skills, src, hidden)
       [[ "$project" == "skills" || "$project" == "src" || "$project" == .* ]] && continue
       # Only treat as a project if it has a memory/ dir
