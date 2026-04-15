@@ -1388,7 +1388,11 @@ if [[ "$LINK_DOTFILES" == true ]]; then
     link_file "$HOME/src/obsidian/projects/agents/settings.json" "$HOME/.claude/settings.json"
     link_dir "$HOME/src/obsidian/projects/agents/skills" "$HOME/.claude/skills"
 
-    # Claude Code project memory + project-scoped instructions (auto-discovered from vault)
+    # Claude Code project memory + project-scoped instructions (auto-discovered from vault).
+    # Default convention: vault project name matches a git repo at ~/src/<project>.
+    # Override: if the vault project dir contains a .project-root file, its content is treated
+    # as the actual absolute project root path (used for non-git projects like Drive folders).
+    # The skill `vault-claude-memory` writes .project-root automatically when vaulting non-git projects.
     for project_path in "$HOME/src/obsidian/projects/agents"/*/; do
       project=$(basename "$project_path")
       project_path="${project_path%/}"  # strip trailing slash from glob
@@ -1396,7 +1400,13 @@ if [[ "$LINK_DOTFILES" == true ]]; then
       [[ "$project" == "skills" || "$project" == "src" || "$project" == .* ]] && continue
       # Only treat as a project if it has a memory/ dir
       [[ -d "$project_path/memory" ]] || continue
-      claude_project_dir="$HOME/.claude/projects/-Users-$(whoami)-src-${project}"
+      if [[ -f "$project_path/.project-root" ]]; then
+        actual_project_root=$(cat "$project_path/.project-root")
+        claude_key=$(echo "$actual_project_root" | sed 's/[^a-zA-Z0-9-]/-/g')
+        claude_project_dir="$HOME/.claude/projects/$claude_key"
+      else
+        claude_project_dir="$HOME/.claude/projects/-Users-$(whoami)-src-${project}"
+      fi
       mkdir -p "$claude_project_dir"
       link_dir "$project_path/memory" "$claude_project_dir/memory"
       # Optional project-scoped instructions

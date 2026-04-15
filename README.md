@@ -54,7 +54,7 @@ agents/
 The setup scripts handle three layers of linking:
 
 1. **Global config.** `AGENTS.md`, `settings.json`, `codex-config.toml`, `skills/` are linked once into `~/.claude/` and `~/.codex/`.
-2. **Per-project memory.** A loop walks every immediate subdirectory of `agents/` and, for any subdir that contains a `memory/` child, creates a symlink at `~/.claude/projects/-Users-<user>-src-<project>/memory` → `agents/<project>/memory/`.
+2. **Per-project memory.** A loop walks every immediate subdirectory of `agents/` and, for any subdir that contains a `memory/` child, creates a symlink to it under `~/.claude/projects/<key>/memory`. The `<key>` defaults to `-Users-<user>-src-<project>` (matching a git repo at `~/src/<project>/`), but if the vault subdir contains a `.project-root` file, its content is read as the actual absolute project path and the key is derived from that — used for non-git projects like Drive folders.
 3. **Per-project instructions.** The same loop links `agents/<project>/AGENTS.md` → `~/.claude/projects/-Users-<user>-src-<project>/CLAUDE.md` if the file exists. Optional per-project.
 
 The loop skips `skills/`, `src/`, and dotdirs. Adding a new vaulted project = create `agents/<newproject>/memory/` and re-run setup. No script edits required.
@@ -80,7 +80,9 @@ The skill handles six cases automatically: already-vaulted no-op, fresh init, ad
 
 ### Project naming convention
 
-The vault subdir name MUST match the on-disk repo basename, AND the repo must live at `~/src/<name>/`. The setup script's auto-discovery loop assumes `~/.claude/projects/-Users-<user>-src-<name>/` as the destination key. Repos outside `~/src/` are not supported by the current loop — the `vault-claude-memory` skill enforces this and refuses.
+**Git repos under `~/src/`:** the vault subdir name MUST match the repo basename. The auto-discovery loop computes `~/.claude/projects/-Users-<user>-src-<name>/` as the destination key by convention. No extra files needed.
+
+**Non-git projects (e.g. Drive folders):** the vault subdir name is the cwd basename. The `vault-claude-memory` skill writes a `.project-root` file alongside `memory/` containing the actual absolute project path, so the setup script can derive the correct destination key on a fresh machine. Caveat: `.project-root` is a literal absolute path, so cross-OS sync (macOS → Linux) requires manually editing the file.
 
 ### Per-project state: Claude vs Codex
 

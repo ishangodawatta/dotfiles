@@ -13,7 +13,7 @@ Agent-facing guidance. This file extends `README.md` — see it for setup, vault
 - The auto-discovery loop walks `agents/*/` and treats any subdir with a `memory/` child as a Claude project. It skips `skills/`, `src/`, and dotdirs — do not place project dirs with those names.
 - Never create `~/src/obsidian/projects/agents/` if it is missing. A missing vault root means the vault isn't mounted; creating it writes data to the wrong place.
 - Never `mv` across the local→vault boundary in scripts or skills. The vault may live on a synced filesystem (iCloud, Syncthing) where `mv` is a non-atomic copy-then-delete. Always `cp -a`, verify, then `rm`.
-- The vault subdir name must match the on-disk repo basename, and the repo must live at `~/src/<name>/`. The `vault-claude-memory` skill enforces this.
+- The vault subdir name must match the on-disk project basename. For git repos, the project must live at `~/src/<name>/`; the `vault-claude-memory` skill enforces this and the auto-discovery loop assumes it. For non-git projects (e.g. Drive folders), the skill writes a `.project-root` file alongside `memory/` so the auto-discovery loop can derive the correct destination key from its content.
 
 ## When modifying setup scripts
 
