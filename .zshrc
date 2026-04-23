@@ -5,6 +5,7 @@ alias ls=eza
 alias cat=bat
 alias srcvenv='source ./.venv/bin/activate'
 alias srcenv='export $(command cat .env | xargs)'
+alias claude='claude --chrome'
 
 # Pyenv wrapper (auto-rehash after install/uninstall)
 pyenv() {
