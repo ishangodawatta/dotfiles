@@ -6,5 +6,6 @@ maximize = true
 macos-non-native-fullscreen = visible-menu
 
 theme = Desert
-macos-option-as-alt = true
+macos-option-as-alt = false
 keybind = shift+enter=text:\x1b\r
+keybind = cmd+shift+c=text:\x1bc
