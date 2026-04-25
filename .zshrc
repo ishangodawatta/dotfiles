@@ -29,3 +29,13 @@ eval "$(zoxide init zsh)"
 # Starship prompt (must be last)
 eval "$(starship init zsh)"
 eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# bun completions
+[ -s "/Users/ishangodawatta/.bun/_bun" ] && source "/Users/ishangodawatta/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+# OpenClaw Completion
+source "/Users/ishangodawatta/.openclaw/completions/openclaw.zsh"
