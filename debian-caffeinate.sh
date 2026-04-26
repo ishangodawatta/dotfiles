@@ -18,8 +18,13 @@ if [[ "${1:-}" == "--lid" ]]; then
   shift
 fi
 
+REASON="${1:-keeping system awake}"
+
+echo "caffeinate: blocking [$WHAT] — reason: $REASON"
+echo "caffeinate: screen may still blank (DE-controlled). Press Ctrl-C to release."
+
 exec systemd-inhibit \
   --what="$WHAT" \
   --who="${USER}-caffeinate" \
-  --why="${1:-keeping system awake}" \
+  --why="$REASON" \
   sleep infinity
