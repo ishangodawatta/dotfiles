@@ -39,3 +39,8 @@ export PATH="$BUN_INSTALL/bin:$PATH"
 
 # OpenClaw Completion
 source "/Users/ishangodawatta/.openclaw/completions/openclaw.zsh"
+
+# pyenv configuration
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init - zsh)"
