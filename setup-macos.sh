@@ -139,7 +139,6 @@ INSTALL_MYSQL=false
 INSTALL_DOCKER=false
 INSTALL_BITWARDEN=false
 LINK_DOTFILES=false
-DISABLE_SPOTLIGHT=false
 DISABLE_MISSION_CONTROL_KEYS=false
 MOVE_DOCK_LEFT=false
 
@@ -264,17 +263,9 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
   if ! ls /Applications/ 2>/dev/null | grep -qi "raycast"; then
     if prompt_yes_no "🔍 Install Raycast (productivity launcher)?"; then
       INSTALL_RAYCAST=true
-      # Ask about disabling Spotlight if installing Raycast
-      if prompt_yes_no "   Disable Spotlight entirely (indexing, agents, shortcut)?"; then
-        DISABLE_SPOTLIGHT=true
-      fi
     fi
   else
     echo "✅ Raycast already installed"
-    # Ask about Spotlight even if Raycast is already installed
-    if prompt_yes_no "Disable Spotlight entirely (indexing, agents, shortcut)?"; then
-      DISABLE_SPOTLIGHT=true
-    fi
   fi
 
   # Check Mission Control shortcuts
@@ -969,6 +960,8 @@ if [[ "$INSTALL_RAYCAST" == true ]]; then
   echo "🔍 Installing Raycast..."
   brew install --cask raycast
   echo "✅ Raycast installed"
+  echo "   To free Cmd+Space for Raycast, disable Spotlight in:"
+  echo "   System Settings → Keyboard → Keyboard Shortcuts → Spotlight"
 fi
 
 # Visual Studio Code
@@ -1266,30 +1259,9 @@ if [[ "$INSTALL_DOCKER" == true ]]; then
 fi
 
 # Configure macOS settings
-if [[ "$DISABLE_SPOTLIGHT" == true ]] || [[ "$MOVE_DOCK_LEFT" == true ]]; then
+if [[ "$MOVE_DOCK_LEFT" == true ]]; then
   echo ""
   echo "⚙️  Configuring macOS settings..."
-fi
-
-# Disable Spotlight
-if [[ "$DISABLE_SPOTLIGHT" == true ]]; then
-  echo "Disabling Spotlight..."
-
-  # Disable Spotlight keyboard shortcut (Cmd+Space)
-  defaults write com.apple.symbolichotkeys AppleSymbolicHotKeys -dict-add 64 "{ enabled = 0; value = { parameters = (65535, 49, 1048576); type = 'standard'; }; }"
-
-  # Disable Spotlight indexing on all volumes
-  sudo mdutil -a -i off
-
-  # Disable Spotlight launch agents
-  launchctl disable "gui/$(id -u)/com.apple.Spotlight"
-  launchctl disable "gui/$(id -u)/com.apple.corespotlightd"
-  launchctl disable "gui/$(id -u)/com.apple.corespotlightservice"
-  launchctl disable "gui/$(id -u)/com.apple.spotlightknowledged"
-  launchctl disable "gui/$(id -u)/com.apple.spotlightknowledged.importer"
-  launchctl disable "gui/$(id -u)/com.apple.spotlightknowledged.updater"
-
-  echo "Spotlight fully disabled (requires logout to take effect)"
 fi
 
 # Disable Mission Control keyboard shortcuts
@@ -1533,28 +1505,18 @@ echo "🎉 macOS setup complete!"
 echo ""
 echo "📝 Next steps:"
 echo "1. Restart your terminal or run 'source ~/.zshrc' to reload your shell"
-if [[ "$DISABLE_SPOTLIGHT" == true ]]; then
-  echo "2. Log out and log back in for Spotlight changes to fully apply"
-  echo "3. Configure git if not already done:"
-else
-  echo "2. Configure git if not already done:"
-fi
+echo "2. Configure git if not already done:"
 echo "   git config --global user.name 'Your Name'"
 echo "   git config --global user.email 'your.email@example.com'"
 if [[ "$INSTALL_MYSQL" == true ]]; then
-  if [[ "$DISABLE_SPOTLIGHT" == true ]]; then
-    echo "4. Set MySQL root password:"
-    echo "   mysql -u root -e \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'G1234567';\""
-    echo "5. Open VS Code and install your preferred extensions"
-  else
-    echo "3. Set MySQL root password:"
-    echo "   mysql -u root -e \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'G1234567';\""
-    echo "4. Open VS Code and install your preferred extensions"
-  fi
+  echo "3. Set MySQL root password:"
+  echo "   mysql -u root -e \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'G1234567';\""
+  echo "4. Open VS Code and install your preferred extensions"
 else
-  if [[ "$DISABLE_SPOTLIGHT" == true ]]; then
-    echo "4. Open VS Code and install your preferred extensions"
-  else
-    echo "3. Open VS Code and install your preferred extensions"
-  fi
+  echo "3. Open VS Code and install your preferred extensions"
+fi
+if [[ "$INSTALL_RAYCAST" == true ]]; then
+  echo ""
+  echo "🔍 Raycast: free Cmd+Space by disabling Spotlight in:"
+  echo "   System Settings → Keyboard → Keyboard Shortcuts → Spotlight"
 fi
