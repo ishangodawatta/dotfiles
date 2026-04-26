@@ -87,6 +87,7 @@ echo ""
 CONFIGURE_SUDO=false
 INSTALL_BUILD_ESSENTIAL=false
 INSTALL_CURL=false
+INSTALL_RSYNC=false
 INSTALL_GIT=false
 CONFIGURE_GLOBAL_GIT_EXCLUDES=false
 INSTALL_UV=false
@@ -126,6 +127,16 @@ LINK_DOTFILES=false
 INSTALL_LLAMACPP=false
 INSTALL_MYSQL=false
 INSTALL_DOCKER=false
+INSTALL_STARSHIP=false
+INSTALL_FZF=false
+INSTALL_ZOXIDE=false
+INSTALL_RIPGREP=false
+INSTALL_FD=false
+INSTALL_BAT=false
+INSTALL_EZA=false
+INSTALL_LAZYGIT=false
+INSTALL_DELTA=false
+INSTALL_GLAB=false
 
 # Check if current user needs sudo configuration
 CURRENT_USER=$(whoami)
@@ -153,6 +164,15 @@ if ! command -v curl &>/dev/null; then
   fi
 else
   echo "✅ curl already installed"
+fi
+
+# Check rsync
+if ! command -v rsync &>/dev/null; then
+  if prompt_yes_no "🔄 Install rsync (file sync utility)?"; then
+    INSTALL_RSYNC=true
+  fi
+else
+  echo "✅ rsync already installed"
 fi
 
 # Check Git
@@ -330,6 +350,96 @@ else
   else
     echo "✅ Python already configured via pyenv: $(pyenv global)"
   fi
+fi
+
+# Check starship
+if ! command -v starship &>/dev/null; then
+  if prompt_yes_no "Install starship (shell prompt)?"; then
+    INSTALL_STARSHIP=true
+  fi
+else
+  echo "starship already installed"
+fi
+
+# Check fzf
+if ! command -v fzf &>/dev/null; then
+  if prompt_yes_no "Install fzf (fuzzy finder)?"; then
+    INSTALL_FZF=true
+  fi
+else
+  echo "fzf already installed"
+fi
+
+# Check zoxide
+if ! command -v zoxide &>/dev/null; then
+  if prompt_yes_no "Install zoxide (smart directory jumper)?"; then
+    INSTALL_ZOXIDE=true
+  fi
+else
+  echo "zoxide already installed"
+fi
+
+# Check ripgrep
+if ! command -v rg &>/dev/null; then
+  if prompt_yes_no "Install ripgrep (fast code search)?"; then
+    INSTALL_RIPGREP=true
+  fi
+else
+  echo "ripgrep already installed"
+fi
+
+# Check fd
+if ! command -v fd &>/dev/null && ! command -v fdfind &>/dev/null; then
+  if prompt_yes_no "Install fd (fast file finder, used by Telescope)?"; then
+    INSTALL_FD=true
+  fi
+else
+  echo "fd already installed"
+fi
+
+# Check bat
+if ! command -v bat &>/dev/null && ! command -v batcat &>/dev/null; then
+  if prompt_yes_no "Install bat (cat clone with syntax highlighting)?"; then
+    INSTALL_BAT=true
+  fi
+else
+  echo "bat already installed"
+fi
+
+# Check eza
+if ! command -v eza &>/dev/null; then
+  if prompt_yes_no "Install eza (modern ls replacement)?"; then
+    INSTALL_EZA=true
+  fi
+else
+  echo "eza already installed"
+fi
+
+# Check lazygit
+if ! command -v lazygit &>/dev/null; then
+  if prompt_yes_no "Install lazygit (terminal UI for git)?"; then
+    INSTALL_LAZYGIT=true
+  fi
+else
+  echo "lazygit already installed"
+fi
+
+# Check delta
+if ! command -v delta &>/dev/null; then
+  if prompt_yes_no "Install delta (git diff viewer)?"; then
+    INSTALL_DELTA=true
+  fi
+else
+  echo "delta already installed"
+fi
+
+# Check glab
+if ! command -v glab &>/dev/null; then
+  if prompt_yes_no "Install glab (GitLab CLI)?"; then
+    INSTALL_GLAB=true
+  fi
+else
+  echo "glab already installed"
 fi
 
 # Check Flatpak
@@ -624,6 +734,13 @@ if [[ "$INSTALL_CURL" == true ]]; then
   echo "📡 Installing curl..."
   sudo apt install -y curl
   echo "✅ curl installed"
+fi
+
+# Install rsync
+if [[ "$INSTALL_RSYNC" == true ]]; then
+  echo "🔄 Installing rsync..."
+  sudo apt install -y rsync
+  echo "✅ rsync installed"
 fi
 
 # Install git
@@ -1056,6 +1173,150 @@ if [[ "$INSTALL_DOCKER" == true ]]; then
   echo "   Follow the instructions at: https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository"
 fi
 
+# fzf
+if [[ "$INSTALL_FZF" == true ]]; then
+  echo "Installing fzf..."
+  sudo apt install -y fzf
+
+  # Add fzf shell integration (Debian ships example files at /usr/share/doc/fzf/examples)
+  if [ -f "$HOME/.bashrc" ] && ! grep -q 'fzf/examples/key-bindings.bash\|fzf --bash' ~/.bashrc 2>/dev/null; then
+    echo '' >>~/.bashrc
+    echo '# fzf keybindings and completion (Ctrl+R = history, Ctrl+T = files)' >>~/.bashrc
+    echo '[ -f /usr/share/doc/fzf/examples/key-bindings.bash ] && source /usr/share/doc/fzf/examples/key-bindings.bash' >>~/.bashrc
+    echo '[ -f /usr/share/doc/fzf/examples/completion.bash ] && source /usr/share/doc/fzf/examples/completion.bash' >>~/.bashrc
+  fi
+  if [ -f "$HOME/.zshrc" ] && ! grep -q 'fzf/examples/key-bindings.zsh\|fzf --zsh' ~/.zshrc 2>/dev/null; then
+    echo '' >>~/.zshrc
+    echo '# fzf keybindings and completion (Ctrl+R = history, Ctrl+T = files)' >>~/.zshrc
+    echo '[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ] && source /usr/share/doc/fzf/examples/key-bindings.zsh' >>~/.zshrc
+    echo '[ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh' >>~/.zshrc
+  fi
+
+  echo "fzf installed"
+fi
+
+# zoxide
+if [[ "$INSTALL_ZOXIDE" == true ]]; then
+  echo "Installing zoxide..."
+  sudo apt install -y zoxide
+
+  if [ -f "$HOME/.bashrc" ] && ! grep -q 'zoxide init bash' ~/.bashrc 2>/dev/null; then
+    echo '' >>~/.bashrc
+    echo '# zoxide (use z instead of cd, zi for interactive)' >>~/.bashrc
+    echo 'eval "$(zoxide init bash)"' >>~/.bashrc
+  fi
+  if [ -f "$HOME/.zshrc" ] && ! grep -q 'zoxide init zsh' ~/.zshrc 2>/dev/null; then
+    echo '' >>~/.zshrc
+    echo '# zoxide (use z instead of cd, zi for interactive)' >>~/.zshrc
+    echo 'eval "$(zoxide init zsh)"' >>~/.zshrc
+  fi
+
+  echo "zoxide installed"
+fi
+
+# ripgrep
+if [[ "$INSTALL_RIPGREP" == true ]]; then
+  echo "Installing ripgrep..."
+  sudo apt install -y ripgrep
+  echo "ripgrep installed"
+fi
+
+# fd (Debian package is fd-find, binary is fdfind to avoid name conflict)
+if [[ "$INSTALL_FD" == true ]]; then
+  echo "Installing fd..."
+  sudo apt install -y fd-find
+  # Symlink fdfind -> fd in ~/.local/bin so the standard `fd` command works
+  mkdir -p "$HOME/.local/bin"
+  if [ ! -e "$HOME/.local/bin/fd" ] && command -v fdfind &>/dev/null; then
+    ln -s "$(command -v fdfind)" "$HOME/.local/bin/fd"
+  fi
+  echo "fd installed (symlinked fdfind -> ~/.local/bin/fd)"
+fi
+
+# bat (Debian package is bat, binary is batcat to avoid name conflict)
+if [[ "$INSTALL_BAT" == true ]]; then
+  echo "Installing bat..."
+  sudo apt install -y bat
+  # Symlink batcat -> bat in ~/.local/bin so the standard `bat` command works
+  mkdir -p "$HOME/.local/bin"
+  if [ ! -e "$HOME/.local/bin/bat" ] && command -v batcat &>/dev/null; then
+    ln -s "$(command -v batcat)" "$HOME/.local/bin/bat"
+  fi
+  echo "bat installed (symlinked batcat -> ~/.local/bin/bat)"
+fi
+
+# eza
+if [[ "$INSTALL_EZA" == true ]]; then
+  echo "Installing eza..."
+  sudo apt install -y eza
+  echo "eza installed"
+fi
+
+# lazygit (not in Debian apt; install latest release binary)
+if [[ "$INSTALL_LAZYGIT" == true ]]; then
+  echo "Installing lazygit..."
+  LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*')
+  ARCH=$(uname -m)
+  case "$ARCH" in
+    x86_64) LAZYGIT_ARCH="x86_64" ;;
+    aarch64) LAZYGIT_ARCH="arm64" ;;
+    *) LAZYGIT_ARCH="$ARCH" ;;
+  esac
+  curl -fsSLo /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_${LAZYGIT_ARCH}.tar.gz"
+  tar xf /tmp/lazygit.tar.gz -C /tmp lazygit
+  sudo install /tmp/lazygit /usr/local/bin/lazygit
+  rm -f /tmp/lazygit.tar.gz /tmp/lazygit
+  echo "lazygit installed"
+fi
+
+# delta (git-delta)
+if [[ "$INSTALL_DELTA" == true ]]; then
+  echo "Installing delta..."
+  sudo apt install -y git-delta
+
+  # Configure git to use delta as pager (matches setup-macos.sh)
+  git config --global core.pager delta
+  git config --global interactive.diffFilter "delta --color-only"
+  git config --global delta.navigate true
+  git config --global delta.side-by-side true
+  git config --global delta.line-numbers true
+  git config --global merge.conflictstyle diff3
+  git config --global diff.colorMoved default
+
+  echo "delta installed and configured as git pager"
+fi
+
+# glab (GitLab CLI; install via official .deb)
+if [[ "$INSTALL_GLAB" == true ]]; then
+  echo "Installing glab..."
+  ARCH=$(dpkg --print-architecture)
+  GLAB_VERSION=$(curl -s "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/releases" | grep -Po '"tag_name":"v\K[^"]*' | head -n1)
+  curl -fsSLo /tmp/glab.deb "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${ARCH}.deb"
+  sudo apt install -y /tmp/glab.deb
+  rm -f /tmp/glab.deb
+  echo "glab installed"
+fi
+
+# starship
+if [[ "$INSTALL_STARSHIP" == true ]]; then
+  echo "Installing starship..."
+  curl -sS https://starship.rs/install.sh | sh -s -- -y
+
+  # Add starship init to .bashrc and .zshrc if they exist
+  if [ -f "$HOME/.bashrc" ] && ! grep -q 'starship init bash' ~/.bashrc 2>/dev/null; then
+    echo '' >>~/.bashrc
+    echo '# Starship prompt (remove this line to revert to default bash prompt)' >>~/.bashrc
+    echo 'eval "$(starship init bash)"' >>~/.bashrc
+  fi
+  if [ -f "$HOME/.zshrc" ] && ! grep -q 'starship init zsh' ~/.zshrc 2>/dev/null; then
+    echo '' >>~/.zshrc
+    echo '# Starship prompt (remove this line to revert to default zsh prompt)' >>~/.zshrc
+    echo 'eval "$(starship init zsh)"' >>~/.zshrc
+  fi
+
+  echo "starship installed"
+fi
+
 # Link dotfiles
 if [[ "$LINK_DOTFILES" == true ]]; then
   echo "Linking dotfiles..."
@@ -1131,7 +1392,11 @@ if [[ "$LINK_DOTFILES" == true ]]; then
     link_file "$HOME/src/obsidian/projects/agents/settings.json" "$HOME/.claude/settings.json"
     link_dir "$HOME/src/obsidian/projects/agents/skills" "$HOME/.claude/skills"
 
-    # Claude Code project memory + project-scoped instructions (auto-discovered from vault)
+    # Claude Code project memory + project-scoped instructions (auto-discovered from vault).
+    # Default convention: vault project name matches a git repo at ~/src/<project>.
+    # Override: if the vault project dir contains a .project-root file, its content is treated
+    # as the actual absolute project root path (used for non-git projects like Drive folders).
+    # The skill `vault-claude-memory` writes .project-root automatically when vaulting non-git projects.
     for project_path in "$HOME/src/obsidian/projects/agents"/*/; do
       project=$(basename "$project_path")
       project_path="${project_path%/}"  # strip trailing slash from glob
@@ -1139,7 +1404,13 @@ if [[ "$LINK_DOTFILES" == true ]]; then
       [[ "$project" == "skills" || "$project" == "src" || "$project" == .* ]] && continue
       # Only treat as a project if it has a memory/ dir
       [[ -d "$project_path/memory" ]] || continue
-      claude_project_dir="$HOME/.claude/projects/-Users-$(whoami)-src-${project}"
+      if [[ -f "$project_path/.project-root" ]]; then
+        actual_project_root=$(cat "$project_path/.project-root")
+        claude_key=$(echo "$actual_project_root" | sed 's/[^a-zA-Z0-9-]/-/g')
+        claude_project_dir="$HOME/.claude/projects/$claude_key"
+      else
+        claude_project_dir="$HOME/.claude/projects/-home-$(whoami)-src-${project}"
+      fi
       mkdir -p "$claude_project_dir"
       link_dir "$project_path/memory" "$claude_project_dir/memory"
       # Optional project-scoped instructions
@@ -1185,6 +1456,7 @@ echo ""
 echo "🔍 Current installation status:"
 
 command -v curl >/dev/null && echo "✅ curl: $(curl --version | head -n1)"
+command -v rsync >/dev/null && echo "✅ rsync: $(rsync --version | head -n1)"
 command -v git >/dev/null && echo "✅ Git: $(git --version)"
 command -v uv >/dev/null && echo "✅ uv: $(uv --version)"
 command -v git-filter-repo >/dev/null && echo "✅ git-filter-repo: $(git-filter-repo --version 2>&1 | head -n1)"
@@ -1233,6 +1505,18 @@ command -v copyq >/dev/null && echo "✅ CopyQ: Installed"
 command -v remmina >/dev/null && echo "✅ Remmina: Installed"
 command -v nvim >/dev/null && echo "✅ Neovim: $(nvim --version | head -n1)"
 command -v ghostty >/dev/null || flatpak list 2>/dev/null | grep -q ghostty && echo "✅ Ghostty: Installed"
+command -v starship >/dev/null && echo "starship: $(starship --version | head -n1)"
+command -v fzf >/dev/null && echo "fzf: $(fzf --version | head -n1)"
+command -v zoxide >/dev/null && echo "zoxide: $(zoxide --version | head -n1)"
+command -v rg >/dev/null && echo "ripgrep: $(rg --version | head -n1)"
+command -v fd >/dev/null && echo "fd: $(fd --version | head -n1)"
+command -v fdfind >/dev/null && ! command -v fd >/dev/null && echo "fd (fdfind): $(fdfind --version | head -n1)"
+command -v bat >/dev/null && echo "bat: $(bat --version | head -n1)"
+command -v batcat >/dev/null && ! command -v bat >/dev/null && echo "bat (batcat): $(batcat --version | head -n1)"
+command -v eza >/dev/null && echo "eza: $(eza --version | head -n1)"
+command -v lazygit >/dev/null && echo "lazygit: $(lazygit --version | head -n1)"
+command -v delta >/dev/null && echo "delta: $(delta --version | head -n1)"
+command -v glab >/dev/null && echo "glab: $(glab --version 2>&1 | head -n1)"
 command -v llama-cli >/dev/null && echo "✅ llama.cpp: Installed"
 command -v mysql >/dev/null && echo "✅ MySQL: $(mysql --version)"
 command -v docker >/dev/null && echo "✅ Docker: $(docker --version)"
