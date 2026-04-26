@@ -768,7 +768,7 @@ sudo apt update
 # Install NVIDIA proprietary driver (provides nvidia-smi). Reboot required.
 if [[ "$INSTALL_NVIDIA_DRIVER" == true ]]; then
   echo "🎮 Installing nvidia-driver..."
-  sudo apt install -y nvidia-driver firmware-misc-nonfree
+  sudo apt install -y nvidia-driver firmware-misc-nonfree linux-headers-amd64
   echo "✅ nvidia-driver installed — reboot required for kernel module to load"
 fi
 
