@@ -29,6 +29,7 @@ eval "$(zoxide init zsh)"
 # Starship prompt (must be last)
 eval "$(starship init zsh)"
 eval "$(/opt/homebrew/bin/brew shellenv)"
+<<<<<<< Updated upstream
 
 # bun completions
 [ -s "/Users/ishangodawatta/.bun/_bun" ] && source "/Users/ishangodawatta/.bun/_bun"
@@ -44,3 +45,11 @@ source "/Users/ishangodawatta/.openclaw/completions/openclaw.zsh"
 export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init - zsh)"
+||||||| Stash base
+=======
+
+# Android SDK
+export ANDROID_HOME="$HOME/src/android-sdk"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+>>>>>>> Stashed changes
