@@ -1,5 +1,6 @@
 # Starship prompt config
 # Docs: https://starship.rs/config/
+command_timeout = 1500
 # To revert: delete this file and remove the starship init line from ~/.zshrc
 
 # Git status symbols:
