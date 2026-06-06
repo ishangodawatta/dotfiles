@@ -99,6 +99,8 @@ This asymmetry exists because Codex auto-writes per-project trust entries into i
 
 **Codex auto-writes can pollute vaulted config.** Codex CLI writes back to `~/.codex/config.toml` (symlinked to `agents/codex-config.toml`) when you `cd` into a new project — adding `[projects."<path>"] trust_level = "trusted"` entries. These appear in the vaulted file. That is by design and intended; the file accumulates entries over time. There is an open OpenAI issue (openai/codex#15433) asking for trust state to be separable from global config.
 
+**Existing local Codex config is not a blocker.** If `~/.codex/config.toml` already exists as a regular file when setup runs, the setup scripts back it up to `~/.codex/config.toml.bak` and then link `agents/codex-config.toml` in its place. If Codex or a manual edit later replaces the symlink with a real file, copy any wanted changes into the vaulted config and rerun setup to restore the symlink.
+
 ### Cross-machine sync
 
 - The vault itself is synced by Obsidian / your sync provider of choice.
@@ -111,4 +113,3 @@ This asymmetry exists because Codex auto-writes per-project trust entries into i
 - Open feature request to make memory project-local: anthropics/claude-code#25947
 - Open feature request for configurable memory layout: anthropics/claude-code#28276
 - Open Codex issue on separating trust state: openai/codex#15433
-
