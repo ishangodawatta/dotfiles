@@ -127,6 +127,7 @@ INSTALL_RIPGREP=false
 INSTALL_FD=false
 INSTALL_BAT=false
 INSTALL_EZA=false
+INSTALL_SEVENZIP=false
 INSTALL_LAZYGIT=false
 INSTALL_DELTA=false
 INSTALL_LLAMACPP=false
@@ -478,6 +479,15 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     fi
   else
     echo "eza already installed"
+  fi
+
+  # Check sevenzip
+  if ! command -v 7zz &>/dev/null; then
+    if prompt_yes_no "Install sevenzip (7-Zip archiver, handles .7z and split .7z.001 volumes)?"; then
+      INSTALL_SEVENZIP=true
+    fi
+  else
+    echo "sevenzip already installed"
   fi
 
   # Check lazygit
@@ -1168,6 +1178,13 @@ if [[ "$INSTALL_EZA" == true ]]; then
   echo "eza installed"
 fi
 
+# sevenzip
+if [[ "$INSTALL_SEVENZIP" == true ]]; then
+  echo "Installing sevenzip..."
+  brew install sevenzip
+  echo "sevenzip installed"
+fi
+
 # lazygit
 if [[ "$INSTALL_LAZYGIT" == true ]]; then
   echo "Installing lazygit..."
@@ -1484,6 +1501,7 @@ command -v zoxide >/dev/null && echo "zoxide: $(zoxide --version | head -n1)"
 command -v rg >/dev/null && echo "ripgrep: $(rg --version | head -n1)"
 command -v bat >/dev/null && echo "bat: $(bat --version | head -n1)"
 command -v eza >/dev/null && echo "eza: $(eza --version | head -n1)"
+command -v 7zz >/dev/null && echo "sevenzip: $(7zz 2>/dev/null | grep -m1 -i '7-zip')"
 command -v lazygit >/dev/null && echo "lazygit: $(lazygit --version | head -n1)"
 command -v delta >/dev/null && echo "delta: $(delta --version | head -n1)"
 command -v borders >/dev/null && echo "borders: Installed"
