@@ -9,3 +9,11 @@ theme = Desert
 macos-option-as-alt = false
 keybind = shift+enter=text:\x1b\r
 keybind = cmd+shift+c=text:\x1bc
+
+# Coding-agent notifications (see ~/.local/bin/agent-notify).
+# Agents write a BEL to their pty when they are waiting on input; these are the
+# visual cues that BEL triggers. Defaults are attention,title -- border adds a
+# window-border flash. desktop-notifications (default true) is what lets the
+# OSC 777 sequence become a real macOS banner.
+bell-features = attention,title,border
+desktop-notifications = true
