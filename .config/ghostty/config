@@ -12,8 +12,12 @@ keybind = cmd+shift+c=text:\x1bc
 
 # Coding-agent notifications (see ~/.local/bin/agent-notify).
 # Agents write a BEL to their pty when they are waiting on input; these are the
-# visual cues that BEL triggers. Defaults are attention,title -- border adds a
-# window-border flash. desktop-notifications (default true) is what lets the
-# OSC 777 sequence become a real macOS banner.
+# cues that BEL triggers.
+#   attention -- macOS: bounce the dock icon and badge it until Ghostty is focused
+#   title     -- macOS: show a bell in the title, cleared on focus or input
+#   border    -- GTK/Linux only, no-op on macOS; kept for the Debian setup
+# Both macOS cues only really show when Ghostty is unfocused, which is the point.
+# The banner itself is not a bell feature: it comes from the OSC 777 sequence
+# agent-notify writes, which desktop-notifications (default true) permits.
 bell-features = attention,title,border
 desktop-notifications = true
