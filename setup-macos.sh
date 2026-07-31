@@ -115,7 +115,7 @@ INSTALL_SPOTIFY=false
 INSTALL_LOGI_OPTIONS=false
 INSTALL_CHATGPT=false
 INSTALL_CLAUDE_DESKTOP=false
-INSTALL_SUPERWHISPER=false
+INSTALL_OPENWHISPR=false
 INSTALL_ADB=false
 INSTALL_SCRCPY=false
 INSTALL_BORDERS=false
@@ -382,13 +382,13 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     echo "✅ Claude Desktop already installed"
   fi
 
-  # Check superwhisper
-  if ! ls /Applications/ 2>/dev/null | grep -qi "superwhisper"; then
-    if prompt_yes_no "🎙️  Install superwhisper (dictation app)?"; then
-      INSTALL_SUPERWHISPER=true
+  # Check OpenWhispr
+  if ! ls /Applications/ 2>/dev/null | grep -qi "openwhispr"; then
+    if prompt_yes_no "🎙️  Install OpenWhispr (dictation app)?"; then
+      INSTALL_OPENWHISPR=true
     fi
   else
-    echo "✅ superwhisper already installed"
+    echo "✅ OpenWhispr already installed"
   fi
 
   # Check Android Platform Tools (ADB)
@@ -1076,11 +1076,11 @@ if [[ "$INSTALL_CLAUDE_DESKTOP" == true ]]; then
   echo "✅ Claude Desktop installed"
 fi
 
-# superwhisper
-if [[ "$INSTALL_SUPERWHISPER" == true ]]; then
-  echo "🎙️  Installing superwhisper..."
-  brew install --cask superwhisper
-  echo "✅ superwhisper installed"
+# OpenWhispr
+if [[ "$INSTALL_OPENWHISPR" == true ]]; then
+  echo "🎙️  Installing OpenWhispr..."
+  brew install --cask openwhispr
+  echo "✅ OpenWhispr installed"
 fi
 
 # Android Platform Tools (ADB)
