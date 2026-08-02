@@ -1311,6 +1311,10 @@ if [[ "$LINK_DOTFILES" == true ]]; then
       echo "  skip $(basename "$dest") (not found in dotfiles)"
       return
     fi
+    if [[ "${src%/}" == "${dest%/}" ]]; then
+      echo "  ok $dest (already in place)"
+      return
+    fi
     if [[ -L "$dest" ]]; then
       rm "$dest"
     elif [[ -f "$dest" ]]; then
@@ -1326,6 +1330,14 @@ if [[ "$LINK_DOTFILES" == true ]]; then
     local src="$1" dest="$2"
     if [[ ! -d "$src" ]]; then
       echo "  skip $(basename "$dest") (not found in dotfiles)"
+      return
+    fi
+    # Source and destination are the same path (e.g. vault cloned directly to
+    # ~/src/obsidian). Linking would move the source aside and leave a
+    # self-referential symlink, breaking every dependent link. Plain string
+    # compare rather than realpath -- BSD realpath has no -m flag.
+    if [[ "${src%/}" == "${dest%/}" ]]; then
+      echo "  ok $dest (already in place)"
       return
     fi
     if [[ -L "$dest" ]]; then
