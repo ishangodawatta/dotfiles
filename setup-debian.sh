@@ -837,10 +837,20 @@ if [[ "$INSTALL_TMUX" == true ]]; then
   echo "✅ tmux installed"
 fi
 
-# Install Neovim
+# Install Neovim (Debian's apt package lags LazyVim's minimum version; install latest release binary)
 if [[ "$INSTALL_NVIM" == true ]]; then
   echo "📝 Installing Neovim..."
-  sudo apt install -y neovim
+  ARCH=$(uname -m)
+  case "$ARCH" in
+    x86_64) NVIM_ARCH="x86_64" ;;
+    aarch64) NVIM_ARCH="arm64" ;;
+    *) NVIM_ARCH="$ARCH" ;;
+  esac
+  curl -fsSLo /tmp/nvim-linux.tar.gz "https://github.com/neovim/neovim/releases/latest/download/nvim-linux-${NVIM_ARCH}.tar.gz"
+  sudo rm -rf "/opt/nvim-linux-${NVIM_ARCH}"
+  sudo tar xzf /tmp/nvim-linux.tar.gz -C /opt
+  sudo ln -sf "/opt/nvim-linux-${NVIM_ARCH}/bin/nvim" /usr/local/bin/nvim
+  rm -f /tmp/nvim-linux.tar.gz
   echo "✅ Neovim installed"
 fi
 
