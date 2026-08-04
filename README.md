@@ -22,12 +22,18 @@ Copy `.config` files to `~`
 
 ## AI tooling (Claude Code, OpenAI Codex)
 
-Both Claude Code and Codex CLI are configured via an Obsidian vault at `~/src/obsidian/projects/agents/`. The setup scripts symlink the vault contents into `~/.claude/` and `~/.codex/` so all AI config (instructions, settings, skills, per-project memory) lives in one private location instead of being committed to this repo.
+Both Claude Code and Codex CLI are configured via an Obsidian vault at `~/src/obsidian/projects/agents/`. The setup scripts symlink the vault contents into `~/.claude/`, `~/.codex/`, and `~/.agents/` so all AI config (instructions, settings, skills, per-project memory) lives in one private location instead of being committed to this repo.
 
 ### Bootstrap on a new machine
 
 ```
 ./setup-macos.sh /path/to/obsidian/vault   # or ./setup-debian.sh
+```
+
+On Windows, run the dedicated agent configuration script after syncing the vault:
+
+```powershell
+.\setup-claude-code.ps1 "C:\path\to\obsidian\vault"
 ```
 
 The scripts are idempotent — re-run any time to refresh symlinks.
@@ -40,7 +46,7 @@ agents/
 ├── settings.json         ← Claude Code settings (linked to ~/.claude/settings.json)
 ├── codex-config.toml     ← Codex CLI config (linked to ~/.codex/config.toml)
 ├── plugins.txt           ← Claude Code plugin manifest (read by setup script on install)
-├── skills/               ← shared skills, used by both Claude and Codex
+├── skills/               ← linked to ~/.claude/skills and ~/.agents/skills
 │   ├── vault-claude-memory/
 │   ├── clean-worktree/
 │   └── ... (one dir per skill, each with SKILL.md)
@@ -53,11 +59,18 @@ agents/
 
 The setup scripts handle three layers of linking:
 
-1. **Global config.** `AGENTS.md`, `settings.json`, `codex-config.toml`, `skills/` are linked once into `~/.claude/` and `~/.codex/`.
+1. **Global config.** Claude configuration is linked into `~/.claude/`, Codex configuration into `~/.codex/`, and the shared skill catalogue into both `~/.claude/skills` and the cross-agent `~/.agents/skills` location.
 2. **Per-project memory.** A loop walks every immediate subdirectory of `agents/` and, for any subdir that contains a `memory/` child, creates a symlink to it under `~/.claude/projects/<key>/memory`. The `<key>` defaults to `-Users-<user>-src-<project>` (matching a git repo at `~/src/<project>/`), but if the vault subdir contains a `.project-root` file, its content is read as the actual absolute project path and the key is derived from that — used for non-git projects like Drive folders.
 3. **Per-project instructions.** The same loop links `agents/<project>/AGENTS.md` → `~/.claude/projects/-Users-<user>-src-<project>/CLAUDE.md` if the file exists. Optional per-project.
 
 The loop skips `skills/`, `src/`, and dotdirs. Adding a new vaulted project = create `agents/<newproject>/memory/` and re-run setup. No script edits required.
+
+### Shared skill compatibility
+
+- Keep shared `SKILL.md` frontmatter agent-neutral: use only `name` and `description`.
+- Put Claude-only invocation visibility in `agents/settings.json` under `skillOverrides`.
+- Put Codex-only invocation policy in each skill's `agents/openai.yaml`.
+- Claude's `/skills` menu writes project-local overrides. Those higher-precedence settings can intentionally make one project's behaviour differ from the synced global default.
 
 ### Adding a new project
 
@@ -93,7 +106,7 @@ This asymmetry exists because Codex auto-writes per-project trust entries into i
 
 ### Failure modes
 
-**Renaming the vault root silently breaks everything.** Every symlink under `~/.claude/` and `~/.codex/` becomes a dead pointer. Active sessions keep working from cached state, masking the breakage until next session start. The setup scripts run a broken-symlink check at the top of the linking phase and warn loudly. Recovery: re-run setup. The scripts are idempotent and will replace stale symlinks.
+**Renaming the vault root silently breaks everything.** Every symlink under `~/.claude/`, `~/.codex/`, and `~/.agents/` becomes a dead pointer. Active sessions keep working from cached state, masking the breakage until next session start. The setup scripts run a broken-symlink check at the top of the linking phase and warn loudly. Recovery: re-run setup. The scripts are idempotent and will replace stale symlinks.
 
 **Vault not mounted at setup time.** If `~/src/obsidian/projects/agents/` doesn't exist when you run setup (iCloud not yet synced, Syncthing paused, external drive unmounted), the script skips the linking phase entirely. Re-run setup once the vault is available.
 

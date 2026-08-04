@@ -1350,6 +1350,16 @@ if [[ "$LINK_DOTFILES" == true ]]; then
     echo "  link $dest"
   }
 
+  # Remove the legacy Codex skill link only when an earlier setup run created it.
+  remove_legacy_codex_skills_link() {
+    local legacy="$HOME/.codex/skills"
+    local expected="$HOME/src/obsidian/projects/agents/skills"
+    if [[ -L "$legacy" && "$(readlink "$legacy")" == "$expected" ]]; then
+      rm "$legacy"
+      echo "  remove legacy $legacy"
+    fi
+  }
+
   # Shell config files
   for f in .zprofile .zshrc .tmux.conf; do
     link_file "$SCRIPT_DIR/$f" "$HOME/$f"
@@ -1391,7 +1401,7 @@ if [[ "$LINK_DOTFILES" == true ]]; then
     fi
 
     # Detect broken symlinks from a previous setup run (e.g. after vault rename)
-    broken_links=$(find "$HOME/.claude" "$HOME/.codex" -type l ! -exec test -e {} \; -print 2>/dev/null || true)
+    broken_links=$(find "$HOME/.claude" "$HOME/.codex" "$HOME/.agents" -type l ! -exec test -e {} \; -print 2>/dev/null || true)
     if [[ -n "$broken_links" ]]; then
       echo "WARNING: broken symlinks detected (will be replaced if new targets exist):"
       echo "$broken_links" | sed 's/^/  /'
@@ -1430,11 +1440,12 @@ if [[ "$LINK_DOTFILES" == true ]]; then
       fi
     done
 
-    # OpenAI Codex config (shares instructions and skills with Claude Code)
-    mkdir -p "$HOME/.codex"
+    # OpenAI Codex config and cross-agent skills.
+    mkdir -p "$HOME/.codex" "$HOME/.agents"
     link_file "$HOME/src/obsidian/projects/agents/codex-config.toml" "$HOME/.codex/config.toml"
     link_file "$HOME/src/obsidian/projects/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
-    link_dir "$HOME/src/obsidian/projects/agents/skills" "$HOME/.codex/skills"
+    link_dir "$HOME/src/obsidian/projects/agents/skills" "$HOME/.agents/skills"
+    remove_legacy_codex_skills_link
 
     # Claude Code plugins (install from manifest if claude CLI is available)
     if command -v claude &>/dev/null && [[ -f "$HOME/src/obsidian/projects/agents/plugins.txt" ]]; then
@@ -1450,7 +1461,7 @@ if [[ "$LINK_DOTFILES" == true ]]; then
     fi
 
     # Post-wiring check: detect any newly-broken symlinks introduced during linking
-    broken_links_after=$(find "$HOME/.claude" "$HOME/.codex" -type l ! -exec test -e {} \; -print 2>/dev/null || true)
+    broken_links_after=$(find "$HOME/.claude" "$HOME/.codex" "$HOME/.agents" -type l ! -exec test -e {} \; -print 2>/dev/null || true)
     new_broken=$(comm -23 <(printf '%s\n' "$broken_links_after" | sort -u) <(printf '%s\n' "$broken_links" | sort -u) 2>/dev/null | grep -v '^$' || true)
     if [[ -n "$new_broken" ]]; then
       echo "ERROR: new broken symlinks introduced during linking phase:"

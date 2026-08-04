@@ -1,5 +1,5 @@
 # Claude Code & Codex Configuration Setup (PowerShell)
-# Links ~/.claude and ~/.codex to the Obsidian vault
+# Links ~/.claude, ~/.codex, and ~/.agents to the Obsidian vault
 
 param(
     [Parameter(Mandatory=$true, Position=0)]
@@ -18,6 +18,7 @@ if (-not (Test-Path (Join-Path $ObsidianVault "projects"))) {
 $SrcObsidian = Join-Path $env:USERPROFILE "src\obsidian"
 $ClaudeDir = Join-Path $env:USERPROFILE ".claude"
 $CodexDir = Join-Path $env:USERPROFILE ".codex"
+$AgentsDir = Join-Path $env:USERPROFILE ".agents"
 $VaultAgents = Join-Path $ObsidianVault "projects\agents"
 
 if (-not (Test-Path $VaultAgents -PathType Container)) {
@@ -94,11 +95,23 @@ foreach ($projectDir in Get-ChildItem -Path $VaultAgents -Directory) {
     }
 }
 
-# Codex config
+# Codex config and cross-agent skills
 New-Item -ItemType Directory -Path $CodexDir -Force | Out-Null
+New-Item -ItemType Directory -Path $AgentsDir -Force | Out-Null
 Link-Item -Source (Join-Path $VaultAgents "codex-config.toml") -Dest (Join-Path $CodexDir "config.toml")
 Link-Item -Source (Join-Path $VaultAgents "AGENTS.md") -Dest (Join-Path $CodexDir "AGENTS.md")
-Link-Item -Source (Join-Path $VaultAgents "skills") -Dest (Join-Path $CodexDir "skills") -IsDir
+$SkillsSource = Join-Path $VaultAgents "skills"
+Link-Item -Source $SkillsSource -Dest (Join-Path $AgentsDir "skills") -IsDir
+
+# Remove the legacy Codex skill link only when an earlier setup run created it.
+$LegacyCodexSkills = Join-Path $CodexDir "skills"
+$LegacyCodexSkillsItem = Get-Item $LegacyCodexSkills -Force -ErrorAction SilentlyContinue
+if ($null -ne $LegacyCodexSkillsItem -and
+    ($LegacyCodexSkillsItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -and
+    $LegacyCodexSkillsItem.Target -eq $SkillsSource) {
+    Remove-Item $LegacyCodexSkills -Force
+    Write-Host "  remove legacy $LegacyCodexSkills"
+}
 
 # Claude Code plugins (install from manifest if claude CLI is available)
 $PluginsFile = Join-Path $VaultAgents "plugins.txt"
