@@ -46,3 +46,17 @@ eval "$(pyenv init - zsh)"
 export ANDROID_HOME="$HOME/src/android-sdk"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+
+# - added by install_latest_codex.sh -
+_codex_arch="$(uname -m)"
+case "$_codex_arch" in
+  x86_64) _codex_arch="x86_64" ;;
+  aarch64|arm64) _codex_arch="aarch64" ;;
+  *) _codex_arch="" ;;
+esac
+if [ -n "$_codex_arch" ]; then
+  if [ -d "$HOME/.local/bin/$_codex_arch" ]; then
+    export PATH="$HOME/.local/bin/$_codex_arch:$PATH"
+  fi
+fi
+unset _codex_arch
