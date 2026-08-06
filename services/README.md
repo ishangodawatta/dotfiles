@@ -3,22 +3,25 @@
 What runs where, on which drive, and why -- so state doesn't get lost between
 this repo, the app repos, and whatever's plugged in on a given day.
 
-**Goal: fully remove Extreme_SSD from this machine.** Lexar is the new
-primary store for all media services; Extreme_SSD is being kept as a synced
-mirror only until every service (Jellyfin done, Plex in progress, Immich not
-started) no longer depends on it.
+**Goal: fully remove Extreme_SSD from this machine.** Lexar is now the
+primary store for all media services (Jellyfin, Plex, and Immich have all
+been migrated) -- Extreme_SSD is kept connected only as a synced fallback
+mirror until it's confirmed safe to disconnect for good.
 
 ## Drives
 
 - **Extreme_SSD** (SanDisk Extreme 55AE, exFAT, 1.8TB) -- mounted at
   `/media/ishan/Extreme_SSD` (udisks2) and `/mnt/extreme_ssd` (fstab,
   `UUID=BA1E-637C`). Being phased out; kept as an exact mirror of the Lexar's
-  `Movies`/`TV_Series`/`Other_Videos` structure in the meantime, so it's a
-  drop-in fallback if the Lexar has problems. Any reorganisation (renames,
-  new folders) should happen on Extreme_SSD first, then be copied to the
-  Lexar, so the mirror never drifts.
+  `Movies`/`TV_Series`/`Other_Videos`/`family_media` structure in the
+  meantime, so it's a drop-in fallback if the Lexar has problems. Any
+  reorganisation (renames, new folders) should happen on Extreme_SSD first,
+  then be copied to the Lexar, so the mirror never drifts. Still holds a lot
+  of unrelated personal data (`work`, `projects`, `wedding_nov_2024`, etc.)
+  that was never part of this migration and has no copy elsewhere -- do not
+  wipe until that's backed up separately.
 - **Lexar** (WD Black NVMe in a Lexar M.2 USB enclosure, exFAT, 932GB) --
-  primary store for Jellyfin (done) and, eventually, Immich. Stable fstab
+  primary store for Jellyfin, Plex, and Immich (all migrated). Stable fstab
   mount at `/mnt/lexar_ssd` (`UUID=6A59-F21F`, `x-systemd.automount`) --
   set up the same way as Extreme_SSD's `/mnt/extreme_ssd` entry. Note: the
   enclosure's USB
@@ -37,8 +40,12 @@ no Docker, no repo, no compose file. Library paths live in Plex's own
 SQLite state under `/var/lib/plexmediaserver/...` (root-owned, not
 readable/editable directly -- changes must go through the Plex web UI's
 "Edit Library" flow to avoid orphaning metadata/watch history).
-**Migration to the Lexar is in progress** as part of the Extreme_SSD
-removal goal above.
+**Fully migrated to the Lexar** (`/mnt/lexar_ssd/Movies`,
+`/mnt/lexar_ssd/TV_Series`) as of 2026-08-06 -- done via the web UI's
+"Add folders" (new Lexar path added alongside the old one, scanned,
+verified Plex hash-matched every file into its existing metadata item
+with zero orphaned duplicates, then the old Extreme_SSD path removed).
+No Extreme_SSD dependency left for Plex.
 
 ## Jellyfin
 
@@ -47,10 +54,11 @@ removal goal above.
   2026-08-06):
   - `/mnt/lexar_ssd/Movies` -> `/media/movies`
   - `/mnt/lexar_ssd/TV_Series` -> `/media/tv`
-  - `/mnt/lexar_ssd/Other_Videos` -> `/media/other` (Sports/TV Specials --
-    folder needs adding as a library in the Jellyfin web UI, e.g. as
-    "Mixed content", since fight footage/TV specials won't match well
-    against movie metadata providers)
+  - `/mnt/lexar_ssd/Other_Videos` -> `/media/other`
+- `Other Videos` library added in the Jellyfin web UI as "Mixed Movies and
+  Shows" content type (Sports/TV Specials won't match well against strict
+  movie metadata providers), scanned clean, shows both `Sports` and
+  `TV Specials` folders.
 - Container-internal paths never change even when the host source does, so
   Jellyfin's watch history/metadata matches survive drive migrations
   transparently -- no rescans or path fixups needed on our end.
@@ -113,7 +121,13 @@ Applies to `Movies`, `TV_Series`, and `Other_Videos` on both drives:
   relative to the repo) -- deliberate, not an oversight. Postgres needs
   POSIX filesystem guarantees (fsync, proper journaling) that exFAT over USB
   can't reliably provide; only the asset library moves to external storage.
-- Asset library (`UPLOAD_LOCATION`) migrating to the Lexar.
+- Asset library (`UPLOAD_LOCATION`) **fully migrated to the Lexar** as of
+  2026-08-06 (`/mnt/lexar_ssd/family_media/immich_library`). Containers
+  stopped, final `rsync` confirmed byte-identical (zero files transferred),
+  `.env` repointed, containers restarted clean.
+- `roshani_backups` (`/mnt/lexar_ssd/family_media/roshani_backups`) added as
+  a second read-only External Library alongside `ishan_backups`, same
+  pattern (owner: Ishan, the only Immich user on this instance).
 - **Postgres backup is already handled by Immich itself** -- it writes
   scheduled `pg_dump`-style archives to `<UPLOAD_LOCATION>/backups/`
   (`immich-db-backup-<timestamp>-<version>.sql.gz`, daily). No separate
@@ -127,9 +141,10 @@ Applies to `Movies`, `TV_Series`, and `Other_Videos` on both drives:
 - [x] Set up a stable UUID-based fstab mount for the Lexar (`/mnt/lexar_ssd`)
 - [x] Repoint jellyfin-app compose source paths at the Lexar mount
 - [x] Samba SMB share of `/mnt/lexar_ssd`, restricted to the tailnet
-- [ ] Add the `Other_Videos` (Sports/TV Specials) library in the Jellyfin web UI
-- [ ] Migrate Plex's library paths to the Lexar via the Plex web UI (in progress)
-- [ ] Migrate Immich's `UPLOAD_LOCATION` to the Lexar (in progress)
+- [x] Migrate Plex's library paths to the Lexar via the Plex web UI
+- [x] Migrate Immich's `UPLOAD_LOCATION` to the Lexar
+- [x] Add `roshani_backups` as a second Immich External Library
+- [x] Add the `Other_Videos` (Sports/TV Specials) library in the Jellyfin web UI
 - [ ] Attach redundancy HDD, point it at the Lexar's `family_media/` folder
       (covers Immich assets and its built-in Postgres backups in one copy)
-- [ ] Once Plex + Immich are off Extreme_SSD, disconnect it
+- [ ] Disconnect Extreme_SSD -- nothing left depends on it
