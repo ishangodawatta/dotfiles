@@ -1,7 +1,7 @@
 #!/bin/bash
 # Starts the home-server services on this Debian machine: Tailscale, Plex
-# (native systemd service), and Immich/Jellyfin (Docker Compose). Safe to
-# re-run any time -- every step is idempotent, so running it against
+# and Samba (native systemd services), and Immich/Jellyfin (Docker Compose).
+# Safe to re-run any time -- every step is idempotent, so running it against
 # already-running services is a no-op.
 #
 # Usage:
@@ -50,6 +50,7 @@ start_compose_stack() {
 
 start_systemd_service tailscaled
 start_systemd_service plexmediaserver
+start_systemd_service smbd
 start_compose_stack immich "$IMMICH_DIR"
 start_compose_stack jellyfin "$JELLYFIN_DIR"
 
@@ -57,5 +58,6 @@ echo
 echo "=== Status ==="
 echo "tailscaled:      $(systemctl is-active tailscaled 2>&1)"
 echo "plexmediaserver: $(systemctl is-active plexmediaserver 2>&1)"
+echo "smbd:            $(systemctl is-active smbd 2>&1)"
 echo "immich:          $(docker ps --filter name=immich --format '{{.Names}}: {{.Status}}' 2>&1 || echo 'docker unavailable')"
 echo "jellyfin:        $(docker ps --filter name=jellyfin --format '{{.Names}}: {{.Status}}' 2>&1 || echo 'docker unavailable')"
