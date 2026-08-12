@@ -79,6 +79,39 @@ configure_git_global_excludes() {
   echo "Configured Git global excludes: $excludes_file"
 }
 
+APT_WAIT_TIMEOUT="${APT_WAIT_TIMEOUT:-300}"
+
+apt_lock_processes() {
+  pgrep -af '(^|[[:space:]/])(apt|apt-get|aptitude|dpkg)([[:space:]]|$)|apt.systemd.daily|unattended-upgrade($|[[:space:]])' || true
+}
+
+wait_for_apt() {
+  local waited=0
+  local processes
+
+  while true; do
+    processes="$(apt_lock_processes)"
+
+    if [[ -z "$processes" ]]; then
+      return 0
+    fi
+
+    if (( waited == 0 )); then
+      echo "Waiting for apt/dpkg to become available..."
+    fi
+
+    if (( waited >= APT_WAIT_TIMEOUT )); then
+      echo "apt/dpkg is still busy after ${APT_WAIT_TIMEOUT}s:"
+      echo "$processes" | sed 's/^/   /'
+      echo "Do not delete apt lock files. If a listed process is stale, stop it with sudo and run: sudo dpkg --configure -a"
+      return 1
+    fi
+
+    sleep 5
+    ((waited += 5))
+  done
+}
+
 echo ""
 echo "📋 Let's configure what to install..."
 echo ""
@@ -741,6 +774,7 @@ fi
 
 # Update package list
 echo "📦 Updating package list..."
+wait_for_apt
 sudo apt update
 
 # Install NVIDIA proprietary driver (provides nvidia-smi). Reboot required.
@@ -751,6 +785,7 @@ sudo apt update
 # nvidia-smi will never work post-reboot.
 if [[ "$INSTALL_NVIDIA_DRIVER" == true ]]; then
   echo "🎮 Installing nvidia-driver..."
+  wait_for_apt
   sudo apt install -y nvidia-driver firmware-misc-nonfree linux-headers-amd64 mokutil
   echo "✅ nvidia-driver installed"
 
@@ -774,6 +809,7 @@ fi
 # Install build-essential
 if [[ "$INSTALL_BUILD_ESSENTIAL" == true ]]; then
   echo "🔧 Installing build-essential..."
+  wait_for_apt
   sudo apt install -y build-essential
   echo "✅ build-essential installed"
 fi
@@ -781,6 +817,7 @@ fi
 # Install curl
 if [[ "$INSTALL_CURL" == true ]]; then
   echo "📡 Installing curl..."
+  wait_for_apt
   sudo apt install -y curl
   echo "✅ curl installed"
 fi
@@ -788,6 +825,7 @@ fi
 # Install rsync
 if [[ "$INSTALL_RSYNC" == true ]]; then
   echo "🔄 Installing rsync..."
+  wait_for_apt
   sudo apt install -y rsync
   echo "✅ rsync installed"
 fi
@@ -795,6 +833,7 @@ fi
 # Install git
 if [[ "$INSTALL_GIT" == true ]]; then
   echo "📚 Installing Git..."
+  wait_for_apt
   sudo apt install -y git
   echo "✅ Git installed"
 fi
@@ -806,6 +845,7 @@ fi
 # Install git-filter-repo
 if [[ "$INSTALL_GIT_FILTER_REPO" == true ]]; then
   echo "🧹 Installing git-filter-repo..."
+  wait_for_apt
   sudo apt install -y git-filter-repo
   echo "✅ git-filter-repo installed"
 fi
@@ -813,6 +853,7 @@ fi
 # Install git-lfs
 if [[ "$INSTALL_GIT_LFS" == true ]]; then
   echo "📦 Installing git-lfs..."
+  wait_for_apt
   sudo apt install -y git-lfs
   git lfs install
   echo "✅ git-lfs installed"
@@ -825,7 +866,9 @@ if [[ "$INSTALL_GH" == true ]]; then
   wget -qO- https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null
   sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+  wait_for_apt
   sudo apt update
+  wait_for_apt
   sudo apt install -y gh
   echo "✅ gh installed"
 fi
@@ -833,6 +876,7 @@ fi
 # Install tmux
 if [[ "$INSTALL_TMUX" == true ]]; then
   echo "💻 Installing tmux..."
+  wait_for_apt
   sudo apt install -y tmux
   echo "✅ tmux installed"
 fi
@@ -857,6 +901,7 @@ fi
 # Install OpenSSH Server
 if [[ "$INSTALL_OPENSSH_SERVER" == true ]]; then
   echo "🔐 Installing OpenSSH Server..."
+  wait_for_apt
   sudo apt install -y openssh-server
   sudo systemctl enable ssh
   sudo systemctl start ssh
@@ -881,6 +926,7 @@ fi
 # Install pyenv dependencies and pyenv
 if [[ "$INSTALL_PYENV" == true ]]; then
   echo "🐍 Installing pyenv dependencies..."
+  wait_for_apt
   sudo apt install -y make build-essential libssl-dev zlib1g-dev \
     libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
     libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
@@ -1003,7 +1049,9 @@ if [[ "$INSTALL_BRAVE" == true ]]; then
   echo "🦁 Installing Brave Browser..."
   sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
   echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list
+  wait_for_apt
   sudo apt update
+  wait_for_apt
   sudo apt install -y brave-browser
   echo "✅ Brave Browser installed"
 fi
@@ -1020,7 +1068,9 @@ Components: main
 Architectures: amd64
 Signed-By: /etc/apt/keyrings/linux_signing_key.pub
 EOF
+  wait_for_apt
   sudo apt update
+  wait_for_apt
   sudo apt install -y google-chrome-stable
   echo "✅ Google Chrome installed"
 fi
@@ -1032,7 +1082,9 @@ if [[ "$INSTALL_VSCODE" == true ]]; then
   sudo install -D -o root -g root -m 644 /tmp/packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
   sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
   rm /tmp/packages.microsoft.gpg
+  wait_for_apt
   sudo apt update
+  wait_for_apt
   sudo apt install -y code
   echo "✅ Visual Studio Code installed"
 fi
@@ -1040,6 +1092,7 @@ fi
 # Transmission
 if [[ "$INSTALL_TRANSMISSION" == true ]]; then
   echo "📥 Installing Transmission..."
+  wait_for_apt
   sudo apt install -y transmission-gtk
   echo "✅ Transmission installed"
 fi
@@ -1054,6 +1107,7 @@ if [[ "$INSTALL_OBSIDIAN" == true ]]; then
   else
     tmp_deb=$(mktemp --suffix=.deb)
     curl -fsSL -o "$tmp_deb" "$obsidian_deb_url"
+    wait_for_apt
     sudo apt install -y "$tmp_deb"
     rm -f "$tmp_deb"
     echo "✅ Obsidian installed"
@@ -1065,7 +1119,9 @@ if [[ "$INSTALL_SPOTIFY" == true ]]; then
   echo "🎵 Installing Spotify..."
   curl -sS https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg | sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/spotify.gpg
   echo "deb http://repository.spotify.com stable non-free" | sudo tee /etc/apt/sources.list.d/spotify.list
+  wait_for_apt
   sudo apt update
+  wait_for_apt
   sudo apt install -y spotify-client
   echo "✅ Spotify installed"
 fi
@@ -1073,6 +1129,7 @@ fi
 # Android Platform Tools (ADB)
 if [[ "$INSTALL_ADB" == true ]]; then
   echo "📱 Installing Android Platform Tools (ADB)..."
+  wait_for_apt
   sudo apt install -y android-tools-adb android-tools-fastboot
   echo "✅ Android Platform Tools (ADB) installed"
 fi
@@ -1080,6 +1137,7 @@ fi
 # scrcpy
 if [[ "$INSTALL_SCRCPY" == true ]]; then
   echo "📱 Installing scrcpy..."
+  wait_for_apt
   sudo apt install -y scrcpy
   echo "✅ scrcpy installed"
 fi
@@ -1087,6 +1145,7 @@ fi
 # Flameshot
 if [[ "$INSTALL_FLAMESHOT" == true ]]; then
   echo "📸 Installing Flameshot..."
+  wait_for_apt
   sudo apt install -y flameshot
   echo "✅ Flameshot installed"
 fi
@@ -1094,6 +1153,7 @@ fi
 # i3 window manager and related tools
 if [[ "$INSTALL_I3" == true ]]; then
   echo "🪟 Installing i3 window manager..."
+  wait_for_apt
   sudo apt install -y i3
   echo "✅ i3 installed"
 fi
@@ -1101,6 +1161,7 @@ fi
 # Polybar (install after i3 if needed)
 if [[ "$INSTALL_POLYBAR" == true ]]; then
   echo "📊 Installing Polybar..."
+  wait_for_apt
   sudo apt install -y polybar
   echo "✅ Polybar installed"
 fi
@@ -1108,6 +1169,7 @@ fi
 # Rofi
 if [[ "$INSTALL_ROFI" == true ]]; then
   echo "🔍 Installing Rofi..."
+  wait_for_apt
   sudo apt install -y rofi
   echo "✅ Rofi installed"
 fi
@@ -1115,6 +1177,7 @@ fi
 # Picom
 if [[ "$INSTALL_PICOM" == true ]]; then
   echo "✨ Installing Picom..."
+  wait_for_apt
   sudo apt install -y picom
   echo "✅ Picom installed"
 fi
@@ -1129,6 +1192,7 @@ if [[ "$INSTALL_WHATSAPP" == true ]]; then
   else
     tmp_deb=$(mktemp --suffix=.deb)
     curl -fsSL -o "$tmp_deb" "$wasistlos_deb_url"
+    wait_for_apt
     sudo apt install -y "$tmp_deb"
     rm -f "$tmp_deb"
     echo "✅ WasIstLos installed"
@@ -1138,6 +1202,7 @@ fi
 # rclone
 if [[ "$INSTALL_RCLONE" == true ]]; then
   echo "☁️  Installing rclone..."
+  wait_for_apt
   sudo apt install -y rclone
   echo "✅ rclone installed"
   echo "ℹ️  Run 'rclone config' to set up cloud storage providers"
@@ -1148,6 +1213,7 @@ if [[ "$INSTALL_PLEX" == true ]]; then
   echo "🎬 Installing Plex Media Server..."
   # Download and install Plex
   wget -O /tmp/plexmediaserver.deb https://downloads.plex.tv/plex-media-server-new/1.40.1.8227-c0dd5a73e/debian/plexmediaserver_1.40.1.8227-c0dd5a73e_amd64.deb
+  wait_for_apt
   sudo apt install -y /tmp/plexmediaserver.deb
   rm /tmp/plexmediaserver.deb
   echo "✅ Plex Media Server installed"
@@ -1157,6 +1223,7 @@ fi
 # CopyQ (clipboard manager)
 if [[ "$INSTALL_COPYQ" == true ]]; then
   echo "📋 Installing CopyQ..."
+  wait_for_apt
   sudo apt install -y copyq
   echo "✅ CopyQ installed"
 fi
@@ -1164,6 +1231,7 @@ fi
 # Remmina (Remote Desktop)
 if [[ "$INSTALL_REMMINA" == true ]]; then
   echo "🪟 Installing Remmina..."
+  wait_for_apt
   sudo apt install -y remmina remmina-plugin-rdp remmina-plugin-vnc
   echo "✅ Remmina installed"
 fi
@@ -1173,6 +1241,7 @@ if [[ "$INSTALL_WINE" == true ]]; then
   echo "🍷 Installing Wine..."
 
   # Enable 32-bit architecture
+  wait_for_apt
   sudo dpkg --add-architecture i386
 
   # Create keyrings directory
@@ -1185,7 +1254,9 @@ if [[ "$INSTALL_WINE" == true ]]; then
   sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/debian/dists/trixie/winehq-trixie.sources
 
   # Update and install Wine
+  wait_for_apt
   sudo apt update
+  wait_for_apt
   sudo apt install -y --install-recommends winehq-stable
 
   echo "✅ Wine installed"
@@ -1198,7 +1269,9 @@ if [[ "$INSTALL_GHOSTTY" == true ]]; then
     sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/debian.griffo.io.gpg
   echo "deb https://debian.griffo.io/apt $(lsb_release -sc) main" |
     sudo tee /etc/apt/sources.list.d/debian.griffo.io.list >/dev/null
+  wait_for_apt
   sudo apt update
+  wait_for_apt
   sudo apt install -y ghostty
   echo "✅ Ghostty installed"
 fi
@@ -1206,6 +1279,7 @@ fi
 # llama.cpp (build from source)
 if [[ "$INSTALL_LLAMACPP" == true ]]; then
   echo "🦙 Installing llama.cpp..."
+  wait_for_apt
   sudo apt install -y cmake
   git clone https://github.com/ggerganov/llama.cpp /tmp/llama.cpp
   cmake -B /tmp/llama.cpp/build -S /tmp/llama.cpp
@@ -1218,8 +1292,11 @@ fi
 # MySQL
 if [[ "$INSTALL_MYSQL" == true ]]; then
   echo "🗄️  Installing MySQL..."
+  wait_for_apt
   sudo apt install -y mysql-server
+  wait_for_apt
   sudo apt install -y mysql-workbench || echo "⚠️  MySQL Workbench not available via apt. Download from https://dev.mysql.com/downloads/workbench/"
+  wait_for_apt
   sudo apt install -y mysql-shell || echo "⚠️  MySQL Shell not available via apt. Download from https://dev.mysql.com/downloads/shell/"
   echo "✅ MySQL installed"
   echo "📝 NOTE: Set MySQL root password with: sudo mysql -e \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'your_password';\""
@@ -1228,13 +1305,16 @@ fi
 # Docker
 if [[ "$INSTALL_DOCKER" == true ]]; then
   echo "🐳 Installing Docker..."
+  wait_for_apt
   sudo apt install -y ca-certificates curl
   sudo install -m 0755 -d /etc/apt/keyrings
   sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
   sudo chmod a+r /etc/apt/keyrings/docker.asc
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" |
     sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+  wait_for_apt
   sudo apt update
+  wait_for_apt
   sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
   sudo systemctl enable --now docker
   sudo usermod -aG docker "$USER"
@@ -1245,6 +1325,7 @@ fi
 # fzf
 if [[ "$INSTALL_FZF" == true ]]; then
   echo "Installing fzf..."
+  wait_for_apt
   sudo apt install -y fzf
 
   # Add fzf shell integration (Debian ships example files at /usr/share/doc/fzf/examples)
@@ -1267,6 +1348,7 @@ fi
 # zoxide
 if [[ "$INSTALL_ZOXIDE" == true ]]; then
   echo "Installing zoxide..."
+  wait_for_apt
   sudo apt install -y zoxide
 
   if [ -f "$HOME/.bashrc" ] && ! grep -q 'zoxide init bash' ~/.bashrc 2>/dev/null; then
@@ -1286,6 +1368,7 @@ fi
 # ripgrep
 if [[ "$INSTALL_RIPGREP" == true ]]; then
   echo "Installing ripgrep..."
+  wait_for_apt
   sudo apt install -y ripgrep
   echo "ripgrep installed"
 fi
@@ -1293,6 +1376,7 @@ fi
 # fd (Debian package is fd-find, binary is fdfind to avoid name conflict)
 if [[ "$INSTALL_FD" == true ]]; then
   echo "Installing fd..."
+  wait_for_apt
   sudo apt install -y fd-find
   # Symlink fdfind -> fd in /usr/local/bin so the standard `fd` command works
   if [ ! -e /usr/local/bin/fd ] && command -v fdfind &>/dev/null; then
@@ -1304,6 +1388,7 @@ fi
 # bat (Debian package is bat, binary is batcat to avoid name conflict)
 if [[ "$INSTALL_BAT" == true ]]; then
   echo "Installing bat..."
+  wait_for_apt
   sudo apt install -y bat
   # Symlink batcat -> bat in /usr/local/bin so the standard `bat` command works
   if [ ! -e /usr/local/bin/bat ] && command -v batcat &>/dev/null; then
@@ -1315,6 +1400,7 @@ fi
 # eza
 if [[ "$INSTALL_EZA" == true ]]; then
   echo "Installing eza..."
+  wait_for_apt
   sudo apt install -y eza
   echo "eza installed"
 fi
@@ -1339,6 +1425,7 @@ fi
 # delta (git-delta)
 if [[ "$INSTALL_DELTA" == true ]]; then
   echo "Installing delta..."
+  wait_for_apt
   sudo apt install -y git-delta
 
   # Configure git to use delta as pager (matches setup-macos.sh)
@@ -1359,6 +1446,7 @@ if [[ "$INSTALL_GLAB" == true ]]; then
   ARCH=$(dpkg --print-architecture)
   GLAB_VERSION=$(curl -s "https://gitlab.com/api/v4/projects/gitlab-org%2Fcli/releases" | grep -Po '"tag_name":"v\K[^"]*' | head -n1)
   curl -fsSLo /tmp/glab.deb "https://gitlab.com/gitlab-org/cli/-/releases/v${GLAB_VERSION}/downloads/glab_${GLAB_VERSION}_linux_${ARCH}.deb"
+  wait_for_apt
   sudo apt install -y /tmp/glab.deb
   rm -f /tmp/glab.deb
   echo "glab installed"
