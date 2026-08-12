@@ -1512,10 +1512,11 @@ if [[ "$LINK_DOTFILES" == true ]]; then
       fi
     done
 
-    # OpenAI Codex config and cross-agent skills.
+    # OpenAI Codex config, shared helpers, and cross-agent skills.
     mkdir -p "$HOME/.codex" "$HOME/.agents"
     link_file "$HOME/src/obsidian/projects/agents/codex-config.toml" "$HOME/.codex/config.toml"
     link_file "$HOME/src/obsidian/projects/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
+    link_dir "$HOME/src/obsidian/projects/agents/bin" "$HOME/.agents/bin"
     link_dir "$HOME/src/obsidian/projects/agents/skills" "$HOME/.agents/skills"
     remove_legacy_codex_skills_link
 

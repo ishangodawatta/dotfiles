@@ -95,11 +95,13 @@ foreach ($projectDir in Get-ChildItem -Path $VaultAgents -Directory) {
     }
 }
 
-# Codex config and cross-agent skills
+# Codex config, shared helpers, and cross-agent skills
 New-Item -ItemType Directory -Path $CodexDir -Force | Out-Null
 New-Item -ItemType Directory -Path $AgentsDir -Force | Out-Null
 Link-Item -Source (Join-Path $VaultAgents "codex-config.toml") -Dest (Join-Path $CodexDir "config.toml")
 Link-Item -Source (Join-Path $VaultAgents "AGENTS.md") -Dest (Join-Path $CodexDir "AGENTS.md")
+$BinSource = Join-Path $VaultAgents "bin"
+Link-Item -Source $BinSource -Dest (Join-Path $AgentsDir "bin") -IsDir
 $SkillsSource = Join-Path $VaultAgents "skills"
 Link-Item -Source $SkillsSource -Dest (Join-Path $AgentsDir "skills") -IsDir
 

@@ -46,6 +46,8 @@ agents/
 ├── settings.json         ← Claude Code settings (linked to ~/.claude/settings.json)
 ├── codex-config.toml     ← Codex CLI config (linked to ~/.codex/config.toml)
 ├── plugins.txt           ← Claude Code plugin manifest (read by setup script on install)
+├── bin/                  ← shared helper scripts (linked to ~/.agents/bin)
+│   └── agent-notify
 ├── skills/               ← linked to ~/.claude/skills and ~/.agents/skills
 │   ├── vault-claude-memory/
 │   ├── clean-worktree/
@@ -59,7 +61,7 @@ agents/
 
 The setup scripts handle three layers of linking:
 
-1. **Global config.** Claude configuration is linked into `~/.claude/`, Codex configuration into `~/.codex/`, and the shared skill catalogue into both `~/.claude/skills` and the cross-agent `~/.agents/skills` location.
+1. **Global config.** Claude configuration is linked into `~/.claude/`, Codex configuration into `~/.codex/`, shared helper scripts into `~/.agents/bin`, and the shared skill catalogue into both `~/.claude/skills` and the cross-agent `~/.agents/skills` location.
 2. **Per-project memory.** A loop walks every immediate subdirectory of `agents/` and, for any subdir that contains a `memory/` child, creates a symlink to it under `~/.claude/projects/<key>/memory`. The `<key>` defaults to `-Users-<user>-src-<project>` (matching a git repo at `~/src/<project>/`), but if the vault subdir contains a `.project-root` file, its content is read as the actual absolute project path and the key is derived from that — used for non-git projects like Drive folders.
 3. **Per-project instructions.** The same loop links `agents/<project>/AGENTS.md` → `~/.claude/projects/-Users-<user>-src-<project>/CLAUDE.md` if the file exists. Optional per-project.
 
