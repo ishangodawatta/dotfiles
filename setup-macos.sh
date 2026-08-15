@@ -999,6 +999,23 @@ if [[ "$INSTALL_GHOSTTY" == true ]]; then
   echo "✅ Ghostty installed"
 fi
 
+# Ghostty terminfo (xterm-ghostty): the .app bundle carries its own terminfo
+# entry, but it isn't on any default terminfo search path, so ncurses/readline
+# programs (tmux, remote sessions, etc.) can't resolve TERM=xterm-ghostty and
+# fall back to broken defaults. Compile it into ~/.terminfo, which is on the
+# default path, whenever the app is present but the entry doesn't resolve.
+GHOSTTY_TERMINFO_DIR="/Applications/Ghostty.app/Contents/Resources/terminfo"
+if [[ -d "$GHOSTTY_TERMINFO_DIR" ]] && ! infocmp xterm-ghostty &>/dev/null; then
+  echo "👻 Installing xterm-ghostty terminfo into ~/.terminfo..."
+  if TERMINFO_DIRS="$GHOSTTY_TERMINFO_DIR" infocmp -x xterm-ghostty | tic -x -o ~/.terminfo - 2>/dev/null; then
+    echo "✅ xterm-ghostty terminfo installed"
+  else
+    echo "⚠️  Failed to install xterm-ghostty terminfo"
+  fi
+else
+  echo "✅ xterm-ghostty terminfo already resolvable (or Ghostty not installed)"
+fi
+
 # AeroSpace
 if [[ "$INSTALL_AEROSPACE" == true ]]; then
   echo "✈️  Installing AeroSpace..."
