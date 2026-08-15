@@ -6,7 +6,7 @@
             "complex_modifications": {
                 "rules": [
                     {
-                        "description": "Caps Lock: Esc on tap, Ctrl on hold",
+                        "description": "Caps Lock: Escape",
                         "manipulators": [
                             {
                                 "type": "basic",
@@ -16,33 +16,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "left_control",
-                                        "lazy": true
-                                    }
-                                ],
-                                "to_if_alone": [
-                                    {
                                         "key_code": "escape"
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Shift+Caps Lock: Toggle Caps Lock",
-                        "manipulators": [
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "caps_lock",
-                                    "modifiers": {
-                                        "mandatory": ["shift"],
-                                        "optional": ["caps_lock"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "caps_lock"
                                     }
                                 ]
                             }
