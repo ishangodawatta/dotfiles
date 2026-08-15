@@ -20,6 +20,11 @@ pyenv() {
 bw-unlock() { export BW_SESSION=$(bw unlock --raw); }
 secret() { bw get password "$1"; }
 
+# Zsh completion
+autoload -Uz compinit
+compinit
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+
 # fzf keybindings and completion (Ctrl+R = history, Ctrl+T = files)
 source <(fzf --zsh)
 
