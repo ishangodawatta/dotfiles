@@ -197,11 +197,13 @@ run = ['move-node-to-workspace X']
 #shift-down = ['volume set 0', 'mode main']
 
 [workspace-to-monitor-force-assignment]
-W = ['secondary', 'main']
-E = ['secondary', 'main']
-R = ['secondary', 'main']
-A = ['secondary', 'main']
-S = ['secondary', 'main']
-D = ['secondary', 'main']
+# With three displays: external 1, laptop, external 2.
+# With two displays, 'secondary' selects whichever external is connected.
+W = ['secondary', 1, 'main']
+E = ['secondary', 1, 'main']
+R = ['secondary', 1, 'main']
+A = ['secondary', 3, 'main']
+S = ['secondary', 3, 'main']
+D = ['secondary', 3, 'main']
 Z = 'main'
 X = 'main'
