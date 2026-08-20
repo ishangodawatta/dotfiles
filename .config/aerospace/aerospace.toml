@@ -199,11 +199,11 @@ run = ['move-node-to-workspace X']
 [workspace-to-monitor-force-assignment]
 # With three displays: external 1, laptop, external 2.
 # With two displays, 'secondary' selects whichever external is connected.
-W = ['secondary', 1, 'main']
-E = ['secondary', 1, 'main']
-R = ['secondary', 1, 'main']
-A = ['secondary', 3, 'main']
-S = ['secondary', 3, 'main']
-D = ['secondary', 3, 'main']
+W = ['secondary', 3, 'main']
+E = ['secondary', 3, 'main']
+R = ['secondary', 3, 'main']
+A = ['secondary', 1, 'main']
+S = ['secondary', 1, 'main']
+D = ['secondary', 1, 'main']
 Z = 'main'
 X = 'main'
