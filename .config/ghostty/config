@@ -1,14 +1,17 @@
 font-family = "Lekton Nerd Font" -calt -liga -dlig
 font-size = 18
 
-macos-titlebar-style = hidden
+macos-titlebar-style = tabs
 maximize = true
 macos-non-native-fullscreen = visible-menu
+window-save-state = always
 
 theme = Desert
 macos-option-as-alt = false
 keybind = shift+enter=text:\x1b\r
 keybind = cmd+shift+c=text:\x1bc
+keybind = cmd+t=new_window
+keybind = cmd+shift+l=prompt_surface_title
 
 # Coding-agent notifications (see ~/.local/bin/agent-notify).
 # Agents write a BEL to their pty when they are waiting on input; these are the
