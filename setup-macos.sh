@@ -1302,7 +1302,9 @@ if [[ "$INSTALL_MYSQL" == true ]]; then
   brew install --cask mysqlworkbench
   brew install --cask mysql-shell
   echo "✅ MySQL tools installed (Server 8.4, Workbench, Shell)"
-  echo "📝 NOTE: Set MySQL root password with: mysql -u root -e \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'G1234567';\""
+  echo "📝 NOTE: Start and secure MySQL by running:"
+  echo "   brew services start mysql@8.4"
+  echo '   "$(brew --prefix mysql@8.4)/bin/mysql_secure_installation"'
 fi
 
 # Docker
@@ -1589,8 +1591,9 @@ echo "2. Configure git if not already done:"
 echo "   git config --global user.name 'Your Name'"
 echo "   git config --global user.email 'your.email@example.com'"
 if [[ "$INSTALL_MYSQL" == true ]]; then
-  echo "3. Set MySQL root password:"
-  echo "   mysql -u root -e \"ALTER USER 'root'@'localhost' IDENTIFIED BY 'G1234567';\""
+  echo "3. Start and secure MySQL:"
+  echo "   brew services start mysql@8.4"
+  echo '   "$(brew --prefix mysql@8.4)/bin/mysql_secure_installation"'
   echo "4. Open VS Code and install your preferred extensions"
 else
   echo "3. Open VS Code and install your preferred extensions"
