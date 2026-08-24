@@ -106,7 +106,6 @@ INSTALL_RAYCAST=false
 INSTALL_GHOSTTY=false
 INSTALL_AEROSPACE=false
 INSTALL_GOOGLE_CHROME=false
-INSTALL_PLEX=false
 INSTALL_GOOGLE_DRIVE=false
 INSTALL_TRANSMISSION=false
 INSTALL_OBSIDIAN=false
@@ -299,15 +298,6 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     fi
   else
     echo "✅ Google Chrome already installed"
-  fi
-
-  # Check Plex Media Server
-  if ! ls /Applications/ 2>/dev/null | grep -qi "plex"; then
-    if prompt_yes_no "🎬 Install Plex Media Server?"; then
-      INSTALL_PLEX=true
-    fi
-  else
-    echo "✅ Plex Media Server already installed"
   fi
 
   # Check Google Drive
@@ -1030,13 +1020,6 @@ if [[ "$INSTALL_GOOGLE_CHROME" == true ]]; then
   echo "✅ Google Chrome installed"
 fi
 
-# Plex Media Server
-if [[ "$INSTALL_PLEX" == true ]]; then
-  echo "🎬 Installing Plex Media Server..."
-  brew install --cask plex-media-server
-  echo "✅ Plex Media Server installed"
-fi
-
 # Google Drive
 if [[ "$INSTALL_GOOGLE_DRIVE" == true ]]; then
   echo "☁️  Installing Google Drive..."
@@ -1525,7 +1508,6 @@ ls /Applications/ 2>/dev/null | grep -qi "raycast" && echo "✅ Raycast: Install
 ls /Applications/ 2>/dev/null | grep -qi "ghostty" && echo "✅ Ghostty: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "aerospace" && echo "✅ AeroSpace: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "google chrome" && echo "✅ Google Chrome: Installed"
-ls /Applications/ 2>/dev/null | grep -qi "plex" && echo "✅ Plex Media Server: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "google drive" && echo "✅ Google Drive: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "transmission" && echo "✅ Transmission: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "obsidian" && echo "✅ Obsidian: Installed"
