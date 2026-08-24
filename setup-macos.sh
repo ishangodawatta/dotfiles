@@ -86,7 +86,6 @@ echo ""
 # Ask about each component upfront
 INSTALL_XCODE=false
 INSTALL_HOMEBREW=false
-INSTALL_GIT=false
 CONFIGURE_GLOBAL_GIT_EXCLUDES=false
 INSTALL_UV=false
 INSTALL_GIT_FILTER_REPO=false
@@ -94,6 +93,7 @@ INSTALL_GIT_LFS=false
 INSTALL_TMUX=false
 INSTALL_NVIM=false
 INSTALL_BRAVE=false
+INSTALL_BAMBU_STUDIO=false
 INSTALL_VSCODE=false
 INSTALL_VSCODE_CLI=false
 INSTALL_NVM=false
@@ -127,11 +127,13 @@ INSTALL_FD=false
 INSTALL_BAT=false
 INSTALL_EZA=false
 INSTALL_SEVENZIP=false
+INSTALL_POPPLER=false
 INSTALL_LAZYGIT=false
 INSTALL_DELTA=false
 INSTALL_LLAMACPP=false
 INSTALL_GLAB=false
 INSTALL_GH=false
+INSTALL_RCLONE=false
 INSTALL_SHOTTR=false
 INSTALL_CYBERDUCK=false
 INSTALL_WINDOWS_APP=false
@@ -163,16 +165,9 @@ fi
 
 # Only ask about Homebrew-dependent tools if Homebrew will be available
 if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
-  # Check Git
-  if ! command -v git &>/dev/null; then
-    if prompt_yes_no "📚 Install Git?"; then
-      INSTALL_GIT=true
-    fi
-  else
+  # Check Git configuration (Git is provided by Xcode Command Line Tools)
+  if command -v git &>/dev/null; then
     echo "✅ Git already installed"
-  fi
-
-  if [[ "$INSTALL_GIT" == true ]] || command -v git &>/dev/null; then
     if git_global_excludes_needs_setup; then
       if prompt_yes_no "Configure Git global excludes for CLAUDE.md, .DS_Store, and .env?"; then
         CONFIGURE_GLOBAL_GIT_EXCLUDES=true
@@ -248,6 +243,15 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     fi
   else
     echo "✅ Brave Browser already installed"
+  fi
+
+  # Check Bambu Studio
+  if ! ls /Applications/ 2>/dev/null | grep -qi "bambustudio"; then
+    if prompt_yes_no "Install Bambu Studio (3D printing software)?"; then
+      INSTALL_BAMBU_STUDIO=true
+    fi
+  else
+    echo "Bambu Studio already installed"
   fi
 
   # Check Lunar
@@ -480,6 +484,15 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     echo "sevenzip already installed"
   fi
 
+  # Check Poppler PDF tools
+  if ! command -v pdftotext &>/dev/null; then
+    if prompt_yes_no "Install Poppler (PDF processing tools)?"; then
+      INSTALL_POPPLER=true
+    fi
+  else
+    echo "Poppler already installed"
+  fi
+
   # Check lazygit
   if ! command -v lazygit &>/dev/null; then
     if prompt_yes_no "Install lazygit (terminal UI for git)?"; then
@@ -532,6 +545,15 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     fi
   else
     echo "gh already installed"
+  fi
+
+  # Check rclone
+  if ! command -v rclone &>/dev/null; then
+    if prompt_yes_no "Install rclone (cloud storage sync tool)?"; then
+      INSTALL_RCLONE=true
+    fi
+  else
+    echo "rclone already installed"
   fi
 
   # Check Shottr
@@ -796,13 +818,6 @@ if command -v brew &>/dev/null; then
   brew update
 fi
 
-# Install git
-if [[ "$INSTALL_GIT" == true ]]; then
-  echo "📚 Installing Git..."
-  brew install git
-  echo "✅ Git installed"
-fi
-
 if [[ "$CONFIGURE_GLOBAL_GIT_EXCLUDES" == true ]]; then
   configure_git_global_excludes
 fi
@@ -946,6 +961,13 @@ if [[ "$INSTALL_BRAVE" == true ]]; then
   echo "🦁 Installing Brave Browser..."
   brew install --cask brave-browser
   echo "✅ Brave Browser installed"
+fi
+
+# Bambu Studio
+if [[ "$INSTALL_BAMBU_STUDIO" == true ]]; then
+  echo "Installing Bambu Studio..."
+  brew install --cask bambu-studio
+  echo "Bambu Studio installed"
 fi
 
 # Lunar
@@ -1185,6 +1207,13 @@ if [[ "$INSTALL_SEVENZIP" == true ]]; then
   echo "sevenzip installed"
 fi
 
+# Poppler
+if [[ "$INSTALL_POPPLER" == true ]]; then
+  echo "Installing Poppler..."
+  brew install poppler
+  echo "Poppler installed"
+fi
+
 # lazygit
 if [[ "$INSTALL_LAZYGIT" == true ]]; then
   echo "Installing lazygit..."
@@ -1236,6 +1265,13 @@ if [[ "$INSTALL_GH" == true ]]; then
   echo "Installing gh..."
   brew install gh
   echo "gh installed"
+fi
+
+# rclone
+if [[ "$INSTALL_RCLONE" == true ]]; then
+  echo "Installing rclone..."
+  brew install rclone
+  echo "rclone installed"
 fi
 
 # Shottr
@@ -1503,6 +1539,7 @@ command -v npm >/dev/null && echo "✅ npm: $(npm --version)"
 command -v claude >/dev/null && echo "✅ Claude Code CLI: $(claude --version 2>/dev/null | head -n1)"
 
 ls /Applications/ 2>/dev/null | grep -qi "brave" && echo "✅ Brave Browser: Installed"
+ls /Applications/ 2>/dev/null | grep -qi "bambustudio" && echo "Bambu Studio: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "lunar" && echo "✅ Lunar: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "raycast" && echo "✅ Raycast: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "ghostty" && echo "✅ Ghostty: Installed"
@@ -1525,12 +1562,14 @@ command -v rg >/dev/null && echo "ripgrep: $(rg --version | head -n1)"
 command -v bat >/dev/null && echo "bat: $(bat --version | head -n1)"
 command -v eza >/dev/null && echo "eza: $(eza --version | head -n1)"
 command -v 7zz >/dev/null && echo "sevenzip: $(7zz 2>/dev/null | grep -m1 -i '7-zip')"
+command -v pdftotext >/dev/null && echo "Poppler: $(pdftotext -v 2>&1 | head -n1)"
 command -v lazygit >/dev/null && echo "lazygit: $(lazygit --version | head -n1)"
 command -v delta >/dev/null && echo "delta: $(delta --version | head -n1)"
 command -v borders >/dev/null && echo "borders: Installed"
 command -v llama-cli >/dev/null && echo "✅ llama.cpp: Installed"
 command -v glab >/dev/null && echo "glab: $(glab --version 2>&1 | head -n1)"
 command -v gh >/dev/null && echo "gh: $(gh --version 2>&1 | head -n1)"
+command -v rclone >/dev/null && echo "rclone: $(rclone --version | head -n1)"
 ls /Applications/ 2>/dev/null | grep -qi "shottr" && echo "✅ Shottr: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "cyberduck" && echo "Cyberduck: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "windows app" && echo "✅ Windows App: Installed"
