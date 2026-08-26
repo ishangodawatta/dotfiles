@@ -24,3 +24,6 @@ Temporary Items
 
 # Claude Code
 .claude/settings.local.json
+
+# uv installer receipt (machine-generated state, not config)
+.config/uv/uv-receipt.json
