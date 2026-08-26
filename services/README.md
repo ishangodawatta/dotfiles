@@ -3,10 +3,13 @@
 What runs where, on which drive, and why -- so state doesn't get lost between
 this repo, the app repos, and whatever's plugged in on a given day.
 
-**Goal: fully remove Extreme_SSD from this machine.** Lexar is now the
-primary store for all media services (Jellyfin, Plex, and Immich have all
-been migrated) -- Extreme_SSD is kept connected only as a synced fallback
-mirror until it's confirmed safe to disconnect for good.
+**Goal: fully remove Extreme_SSD from this machine, then repurpose it as a
+personal drive.** Lexar is now the primary store for all media services --
+Jellyfin and Immich (Plex was migrated too, then fully removed in favour
+of standardising on Jellyfin alone, see "Plex -- removed" below). Extreme_SSD is being
+mirrored onto a backup HDD (see "Extreme_SSD -> HDD mirror" below) so it
+can be safely disconnected -- it's not being kept as a permanent fallback,
+it's on its way out once the mirror is complete.
 
 ## Drives
 
@@ -21,7 +24,8 @@ mirror until it's confirmed safe to disconnect for good.
   that was never part of this migration and has no copy elsewhere -- do not
   wipe until that's backed up separately.
 - **Lexar** (WD Black NVMe in a Lexar M.2 USB enclosure, exFAT, 932GB) --
-  primary store for Jellyfin, Plex, and Immich (all migrated). Stable fstab
+  primary store for Jellyfin and Immich (Plex was migrated here too, then
+  removed entirely -- see "Plex -- removed"). Stable fstab
   mount at `/mnt/lexar_ssd` (`UUID=6A59-F21F`, `x-systemd.automount`) --
   set up the same way as Extreme_SSD's `/mnt/extreme_ssd` entry. Note: the
   enclosure's USB
@@ -30,22 +34,73 @@ mirror until it's confirmed safe to disconnect for good.
   20Gbps-capable Thunderbolt controller. Doesn't matter for Jellyfin
   streaming or Immich sync (both need a small fraction of that bandwidth);
   it only means bulk copies onto the drive take longer than they need to.
-- **HDD (planned)** -- redundancy backup target, specifically for Immich
-  (asset files + Postgres dump). Not yet attached.
+- **HDD** (Seagate ST2000LM007, exFAT, 1.8TB, labelled `Trans_2TB`, mounted
+  at `/media/ishan/Trans_2TB`) -- redundancy backup target. Originally
+  planned just for Immich; scope expanded to a full mirror of Extreme_SSD
+  (see "Extreme_SSD -> HDD mirror" below), since the goal is to let
+  Extreme_SSD be disconnected and repurposed once this HDD covers everything
+  it held. Prone to intermittently dropping off USB during long transfers --
+  if a command suddenly can't see `/media/ishan/Trans_2TB`, check `lsblk`
+  and reconnect the cable rather than assuming something's broken.
 
-## Plex
+## Extreme_SSD -> HDD mirror (in progress)
 
-Native systemd service (`plexmediaserver.service`), installed via apt --
-no Docker, no repo, no compose file. Library paths live in Plex's own
-SQLite state under `/var/lib/plexmediaserver/...` (root-owned, not
-readable/editable directly -- changes must go through the Plex web UI's
-"Edit Library" flow to avoid orphaning metadata/watch history).
-**Fully migrated to the Lexar** (`/mnt/lexar_ssd/Movies`,
-`/mnt/lexar_ssd/TV_Series`) as of 2026-08-06 -- done via the web UI's
-"Add folders" (new Lexar path added alongside the old one, scanned,
-verified Plex hash-matched every file into its existing metadata item
-with zero orphaned duplicates, then the old Extreme_SSD path removed).
-No Extreme_SSD dependency left for Plex.
+Goal, in order: (1) make the HDD a full mirror of Extreme_SSD's contents,
+(2) disconnect Extreme_SSD and let it be repurposed as a personal drive,
+(3) sync the HDD against the **Lexar** (not Extreme_SSD) to pick up
+anything Jellyfin/Immich have added since the original Lexar migration,
+since Extreme_SSD's snapshot is by then stale.
+
+How the mirror was built: compared the HDD's pre-existing (old, differently
+organised) content against Extreme_SSD folder by folder. Anything on the
+HDD not matching something on Extreme_SSD got staged into a top-level
+`to-validate/` folder on the HDD (never deleted outright -- staged for
+Ishan to review and clear manually). Folders present on both got
+reconciled so the HDD matches Extreme_SSD.
+
+Non-obvious lesson learned partway through: naive matching by exact
+relative path treats "the same movie/show under an old messy filename" as
+missing content, causing a full re-copy from Extreme_SSD *and* leaving the
+old (actually-duplicate) copy sitting in `to-validate` -- ended up staging
+nearly 300GB of Movies that turned out ~95% duplicate. Fix used from then
+on: fuzzy-match by normalised title/year first, and where the old HDD copy
+turns out byte/size-identical to the Extreme_SSD-sourced copy, delete the
+`to-validate` duplicate rather than leaving it for manual review (only
+genuinely unmatched or differently-sized content stays staged).
+
+Status as of last update:
+- `Movies`: fully reconciled and checksum-verified against Extreme_SSD.
+  `to-validate/Movies` cleaned from 190 items/294GB down to ~8 genuinely
+  unresolved items/~14GB (a few titles genuinely absent from Extreme_SSD,
+  a few different-quality encodes of the same film, plus 2 items --
+  `Boxing Matches`, the Oprah CBS special -- waiting on `Other_Videos`).
+- `TV_Series`: in progress, most shows done (compare-by-title,
+  season+episode-level matching, checksum-verified), a couple of large
+  shows still copying.
+- Other shared folders (`asoka_soundtrack`, `chears`, `emulators`, `games`,
+  `random`, `rental_accommodation`, `school.zip`, `senara`, `software`,
+  `uom`, `work`): reconciled, no leftover-husk cleanup needed (that was a
+  Movies-specific problem).
+- Extreme_SSD-only folders never previously on the HDD at all (small ones
+  copied: `courses`, `library-followups`, `parallels`, `postage`,
+  `projects`, `receipts`, `selling`; large ones still queued:
+  `family_media` ~91GB, `parallels_vm` ~87GB, `wedding_nov_2024` ~35GB;
+  `Other_Videos` ~6GB queued alongside them).
+- Progress checkpointed to `/media/ishan/Trans_2TB/.reconcile-progress.log`
+  on the HDD itself (survives a session/agent restart -- read it directly
+  rather than trusting a resumed process's self-report, which has been
+  wrong more than once during this work).
+
+## Plex -- removed
+
+Was a native systemd service (`plexmediaserver.service`), installed via apt
+-- no Docker, no repo, no compose file. Fully migrated to the Lexar as of
+2026-08-06 (see git history of this file for that detail), then fully
+removed in favour of standardising on Jellyfin as the only media server.
+`systemctl stop`/`disable`, then `apt purge plexmediaserver` + `apt
+autoremove` -- confirmed clean afterward: package gone from `dpkg -l`, the
+systemd unit gone, `/var/lib/plexmediaserver` (library database/watch
+history) gone. Nothing left behind.
 
 ## Jellyfin
 
@@ -142,9 +197,19 @@ Applies to `Movies`, `TV_Series`, and `Other_Videos` on both drives:
 - [x] Repoint jellyfin-app compose source paths at the Lexar mount
 - [x] Samba SMB share of `/mnt/lexar_ssd`, restricted to the tailnet
 - [x] Migrate Plex's library paths to the Lexar via the Plex web UI
+- [x] Remove Plex entirely (`apt purge`), standardise on Jellyfin
 - [x] Migrate Immich's `UPLOAD_LOCATION` to the Lexar
 - [x] Add `roshani_backups` as a second Immich External Library
 - [x] Add the `Other_Videos` (Sports/TV Specials) library in the Jellyfin web UI
-- [ ] Attach redundancy HDD, point it at the Lexar's `family_media/` folder
-      (covers Immich assets and its built-in Postgres backups in one copy)
-- [ ] Disconnect Extreme_SSD -- nothing left depends on it
+- [x] Attach redundancy HDD (`Trans_2TB`)
+- [ ] Finish HDD <-> Extreme_SSD mirror (Movies done; TV_Series in
+      progress; small Extreme_SSD-only folders copied, large ones queued:
+      `family_media`, `parallels_vm`, `wedding_nov_2024`, `Other_Videos`)
+- [ ] Disconnect Extreme_SSD once the mirror is confirmed complete --
+      nothing left depends on it being connected, but it still holds the
+      only copy of `work`/`projects`/`wedding_nov_2024`/etc. until the
+      mirror finishes, so don't disconnect early
+- [ ] After Extreme_SSD is disconnected: sync the HDD against the **Lexar**
+      (not Extreme_SSD) to catch up on anything Jellyfin/Immich have added
+      since the original Lexar migration -- Extreme_SSD's snapshot will be
+      stale by that point
