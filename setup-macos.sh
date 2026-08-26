@@ -131,8 +131,9 @@ INSTALL_BAT=false
 INSTALL_EZA=false
 INSTALL_SEVENZIP=false
 INSTALL_POPPLER=false
-INSTALL_LAZYGIT=false
 INSTALL_DELTA=false
+INSTALL_BTOP=false
+INSTALL_HTOP=false
 INSTALL_LLAMACPP=false
 INSTALL_GLAB=false
 INSTALL_GH=false
@@ -496,15 +497,6 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     echo "Poppler already installed"
   fi
 
-  # Check lazygit
-  if ! command -v lazygit &>/dev/null; then
-    if prompt_yes_no "Install lazygit (terminal UI for git)?"; then
-      INSTALL_LAZYGIT=true
-    fi
-  else
-    echo "lazygit already installed"
-  fi
-
   # Check delta
   if ! command -v delta &>/dev/null; then
     if prompt_yes_no "Install delta (git diff viewer)?"; then
@@ -512,6 +504,24 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     fi
   else
     echo "delta already installed"
+  fi
+
+  # Check btop
+  if ! command -v btop &>/dev/null; then
+    if prompt_yes_no "Install btop (system resource monitor)?"; then
+      INSTALL_BTOP=true
+    fi
+  else
+    echo "btop already installed"
+  fi
+
+  # Check htop
+  if ! command -v htop &>/dev/null; then
+    if prompt_yes_no "Install htop (interactive process viewer)?"; then
+      INSTALL_HTOP=true
+    fi
+  else
+    echo "htop already installed"
   fi
 
   # Check borders
@@ -1218,11 +1228,18 @@ if [[ "$INSTALL_POPPLER" == true ]]; then
   echo "Poppler installed"
 fi
 
-# lazygit
-if [[ "$INSTALL_LAZYGIT" == true ]]; then
-  echo "Installing lazygit..."
-  brew install lazygit
-  echo "lazygit installed"
+# btop
+if [[ "$INSTALL_BTOP" == true ]]; then
+  echo "Installing btop..."
+  brew install btop
+  echo "btop installed"
+fi
+
+# htop
+if [[ "$INSTALL_HTOP" == true ]]; then
+  echo "Installing htop..."
+  brew install htop
+  echo "htop installed"
 fi
 
 # delta
@@ -1576,8 +1593,9 @@ command -v bat >/dev/null && echo "bat: $(bat --version | head -n1)"
 command -v eza >/dev/null && echo "eza: $(eza --version | head -n1)"
 command -v 7zz >/dev/null && echo "sevenzip: $(7zz 2>/dev/null | grep -m1 -i '7-zip')"
 command -v pdftotext >/dev/null && echo "Poppler: $(pdftotext -v 2>&1 | head -n1)"
-command -v lazygit >/dev/null && echo "lazygit: $(lazygit --version | head -n1)"
 command -v delta >/dev/null && echo "delta: $(delta --version | head -n1)"
+command -v btop >/dev/null && echo "btop: $(btop --version | head -n1)"
+command -v htop >/dev/null && echo "htop: $(htop --version | head -n1)"
 command -v borders >/dev/null && echo "borders: Installed"
 command -v llama-cli >/dev/null && echo "✅ llama.cpp: Installed"
 command -v glab >/dev/null && echo "glab: $(glab --version 2>&1 | head -n1)"

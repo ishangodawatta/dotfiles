@@ -169,8 +169,9 @@ INSTALL_RIPGREP=false
 INSTALL_FD=false
 INSTALL_BAT=false
 INSTALL_EZA=false
-INSTALL_LAZYGIT=false
 INSTALL_DELTA=false
+INSTALL_BTOP=false
+INSTALL_HTOP=false
 INSTALL_GLAB=false
 INSTALL_NVIDIA_DRIVER=false
 
@@ -463,15 +464,6 @@ else
   echo "eza already installed"
 fi
 
-# Check lazygit
-if ! command -v lazygit &>/dev/null; then
-  if prompt_yes_no "Install lazygit (terminal UI for git)?"; then
-    INSTALL_LAZYGIT=true
-  fi
-else
-  echo "lazygit already installed"
-fi
-
 # Check delta
 if ! command -v delta &>/dev/null; then
   if prompt_yes_no "Install delta (git diff viewer)?"; then
@@ -479,6 +471,24 @@ if ! command -v delta &>/dev/null; then
   fi
 else
   echo "delta already installed"
+fi
+
+# Check btop
+if ! command -v btop &>/dev/null; then
+  if prompt_yes_no "Install btop (system resource monitor)?"; then
+    INSTALL_BTOP=true
+  fi
+else
+  echo "btop already installed"
+fi
+
+# Check htop
+if ! command -v htop &>/dev/null; then
+  if prompt_yes_no "Install htop (interactive process viewer)?"; then
+    INSTALL_HTOP=true
+  fi
+else
+  echo "htop already installed"
 fi
 
 # Check glab
@@ -1409,21 +1419,20 @@ if [[ "$INSTALL_EZA" == true ]]; then
   echo "eza installed"
 fi
 
-# lazygit (not in Debian apt; install latest release binary)
-if [[ "$INSTALL_LAZYGIT" == true ]]; then
-  echo "Installing lazygit..."
-  LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": *"v\K[^"]*')
-  ARCH=$(uname -m)
-  case "$ARCH" in
-    x86_64) LAZYGIT_ARCH="x86_64" ;;
-    aarch64) LAZYGIT_ARCH="arm64" ;;
-    *) LAZYGIT_ARCH="$ARCH" ;;
-  esac
-  curl -fsSLo /tmp/lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_${LAZYGIT_ARCH}.tar.gz"
-  tar xf /tmp/lazygit.tar.gz -C /tmp lazygit
-  sudo install /tmp/lazygit /usr/local/bin/lazygit
-  rm -f /tmp/lazygit.tar.gz /tmp/lazygit
-  echo "lazygit installed"
+# btop
+if [[ "$INSTALL_BTOP" == true ]]; then
+  echo "Installing btop..."
+  wait_for_apt
+  sudo apt install -y btop
+  echo "btop installed"
+fi
+
+# htop
+if [[ "$INSTALL_HTOP" == true ]]; then
+  echo "Installing htop..."
+  wait_for_apt
+  sudo apt install -y htop
+  echo "htop installed"
 fi
 
 # delta (git-delta)
@@ -1701,8 +1710,9 @@ command -v fdfind >/dev/null && ! command -v fd >/dev/null && echo "✅ fd (fdfi
 command -v bat >/dev/null && echo "✅ bat: $(bat --version | head -n1)"
 command -v batcat >/dev/null && ! command -v bat >/dev/null && echo "✅ bat (batcat): $(batcat --version | head -n1)"
 command -v eza >/dev/null && echo "✅ eza: $(eza --version | head -n1)"
-command -v lazygit >/dev/null && echo "✅ lazygit: $(lazygit --version | head -n1)"
 command -v delta >/dev/null && echo "✅ delta: $(delta --version | head -n1)"
+command -v btop >/dev/null && echo "✅ btop: $(btop --version | head -n1)"
+command -v htop >/dev/null && echo "✅ htop: $(htop --version | head -n1)"
 command -v glab >/dev/null && echo "✅ glab: $(glab --version 2>&1 | head -n1)"
 command -v llama-cli >/dev/null && echo "✅ llama.cpp: Installed"
 command -v mysql >/dev/null && echo "✅ MySQL: $(mysql --version)"
