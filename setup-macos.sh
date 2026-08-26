@@ -1493,6 +1493,10 @@ if [[ "$LINK_DOTFILES" == true ]]; then
       [[ -d "$project_path/memory" ]] || continue
       if [[ -f "$project_path/.project-root" ]]; then
         actual_project_root=$(cat "$project_path/.project-root")
+        # Stored ~-relative so one vault serves hosts with different usernames.
+        # Expand before deriving the key: a tilde read from a file is not expanded by the shell.
+        actual_project_root="${actual_project_root/#\~/$HOME}"
+        actual_project_root="${actual_project_root//\$HOME/$HOME}"
         claude_key=$(echo "$actual_project_root" | sed 's/[^a-zA-Z0-9-]/-/g')
         claude_project_dir="$HOME/.claude/projects/$claude_key"
       else
