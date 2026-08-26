@@ -1416,6 +1416,11 @@ if [[ "$LINK_DOTFILES" == true ]]; then
   # .config files that live inside runtime directories (symlink file, not dir)
   mkdir -p "$HOME/.config/karabiner"
   link_file "$SCRIPT_DIR/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json"
+
+  # Raycast owns ~/.config/raycast/extensions (a symlink into the app bundle), so
+  # link the scripts subdirectory only and leave the parent as a real directory.
+  mkdir -p "$HOME/.config/raycast"
+  link_dir "$SCRIPT_DIR/.config/raycast/scripts" "$HOME/.config/raycast/scripts"
   if [[ -f "$SCRIPT_DIR/.config/starship.toml" ]]; then
     link_file "$SCRIPT_DIR/.config/starship.toml" "$HOME/.config/starship.toml"
   fi
