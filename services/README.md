@@ -69,18 +69,30 @@ turns out byte/size-identical to the Extreme_SSD-sourced copy, delete the
 genuinely unmatched or differently-sized content stays staged).
 
 Status as of last update:
-- `Movies`: fully reconciled and checksum-verified against Extreme_SSD.
-  `to-validate/Movies` cleaned from 190 items/294GB down to ~8 genuinely
-  unresolved items/~14GB (a few titles genuinely absent from Extreme_SSD,
-  a few different-quality encodes of the same film, plus 2 items --
-  `Boxing Matches`, the Oprah CBS special -- waiting on `Other_Videos`).
-- `TV_Series`: in progress, most shows done (compare-by-title,
-  season+episode-level matching, checksum-verified), a couple of large
-  shows still copying.
+- `Movies`: fully reconciled -- full-tree verified, 448/448 files,
+  byte-identical apparent size on both drives. `to-validate/Movies` cleaned
+  from 190 items/294GB down to ~8 genuinely unresolved items/~14GB (a few
+  titles genuinely absent from Extreme_SSD, a few different-quality
+  encodes of the same film, plus 2 items -- `Boxing Matches`, the Oprah CBS
+  special -- waiting on `Other_Videos`).
+- `TV_Series`: **fully reconciled and verified** -- 1756/1756 files,
+  byte-identical apparent size on both drives. One important lesson from
+  finishing this: a couple of shows' fork-reported "size-verified"
+  checkpoints turned out to be wrong (Game of Thrones was missing 75 files
+  of bonus content -- Behind The Scenes/Deleted Scenes/Featurettes -- despite
+  being marked done; a whole extra show, `Pokémon Origins`, was missed
+  entirely since it wasn't a rename of anything already on the HDD, so it
+  never appeared in the original comparison). Caught both via a final
+  full-tree `find`+diff pass across all of `TV_Series` comparing file
+  counts and total apparent bytes, not by trusting per-show checkpoints.
+  **Do this same full-tree verification pass on any folder before
+  considering it actually done**, not just spot checks.
 - Other shared folders (`asoka_soundtrack`, `chears`, `emulators`, `games`,
   `random`, `rental_accommodation`, `school.zip`, `senara`, `software`,
-  `uom`, `work`): reconciled, no leftover-husk cleanup needed (that was a
-  Movies-specific problem).
+  `uom`, `work`): reconciled and full-tree verified, all genuinely
+  byte-identical. Only `Movies` and `TV_Series` had leftover empty old-name
+  "husk" folders in main after content moved out from under them -- both
+  cleaned up.
 - Extreme_SSD-only folders never previously on the HDD at all (small ones
   copied: `courses`, `library-followups`, `parallels`, `postage`,
   `projects`, `receipts`, `selling`; large ones still queued:
