@@ -35,22 +35,24 @@ eval "$(zoxide init zsh)"
 eval "$(starship init zsh)"
 eval "$(/opt/homebrew/bin/brew shellenv)"
 
-# bun completions
-[ -s "/Users/ishangodawatta/.bun/_bun" ] && source "/Users/ishangodawatta/.bun/_bun"
-
-# bun
+# bun (only on machines where bun is installed)
 export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
+if [[ -d "$BUN_INSTALL/bin" ]]; then
+  export PATH="$BUN_INSTALL/bin:$PATH"
+  [ -s "$BUN_INSTALL/_bun" ] && source "$BUN_INSTALL/_bun"
+fi
 
 # pyenv configuration
 export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init - zsh)"
 
-# Android SDK
-export ANDROID_HOME="$HOME/src/android-sdk"
-export ANDROID_SDK_ROOT="$ANDROID_HOME"
-export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+# Android SDK (only on machines where the SDK is installed)
+if [[ -d "$HOME/src/android-sdk" ]]; then
+  export ANDROID_HOME="$HOME/src/android-sdk"
+  export ANDROID_SDK_ROOT="$ANDROID_HOME"
+  export PATH="$ANDROID_HOME/platform-tools:$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+fi
 
 # - added by install_latest_codex.sh -
 _codex_arch="$(uname -m)"
