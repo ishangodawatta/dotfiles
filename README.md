@@ -27,7 +27,7 @@ Both Claude Code and Codex CLI are configured via an Obsidian vault at `~/src/ob
 ### Bootstrap on a new machine
 
 ```
-./setup-macos.sh /path/to/obsidian/vault   # or ./setup-debian.sh
+./setup-macos.sh /path/to/existing/obsidian/vault   # or ./setup-debian.sh
 ```
 
 On Windows, run the dedicated agent configuration script after syncing the vault:
@@ -80,7 +80,7 @@ The loop skips `skills/`, `src/`, and dotdirs. Adding a new vaulted project = cr
 
 ```bash
 mkdir -p ~/src/obsidian/projects/agents/<repo>/memory
-./setup-macos.sh /path/to/obsidian/vault
+./setup-macos.sh /path/to/existing/obsidian/vault
 ```
 
 **Skill:** use `vault-claude-memory` from inside the repo.

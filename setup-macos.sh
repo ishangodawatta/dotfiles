@@ -10,8 +10,11 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
   exit 1
 fi
 
-# Obsidian vault path (can be passed as $1 or prompted interactively)
-OBSIDIAN_VAULT="${1:-}"
+# Existing on-disk location of the Obsidian vault (can be passed as $1 or prompted
+# interactively). This is the real directory -- it must already exist; setup never
+# creates it. It gets symlinked to the stable path ~/src/obsidian, which is what all
+# downstream wiring below references.
+OBSIDIAN_VAULT_SOURCE="${1:-}"
 
 # Function to prompt for yes/no
 prompt_yes_no() {
@@ -702,19 +705,20 @@ if prompt_yes_no "Link dotfiles from this repo to home directory?"; then
   LINK_DOTFILES=true
 fi
 
-# Check Obsidian vault (if not passed as argument)
-if [[ -z "$OBSIDIAN_VAULT" ]]; then
+# Locate the existing Obsidian vault (if not passed as argument)
+if [[ -z "$OBSIDIAN_VAULT_SOURCE" ]]; then
   if [[ -L "$HOME/src/obsidian" ]]; then
     current_target=$(readlink "$HOME/src/obsidian")
-    echo "✅ Obsidian vault already linked -> $current_target"
-    if prompt_yes_no "📓 Re-configure Obsidian vault path?"; then
-      read -p "   Enter Obsidian vault path [$current_target]: " OBSIDIAN_VAULT
-      OBSIDIAN_VAULT="${OBSIDIAN_VAULT:-$current_target}"
+    echo "✅ Obsidian vault: ~/src/obsidian -> $current_target (existing vault)"
+    if prompt_yes_no "📓 Point ~/src/obsidian at a different existing vault?"; then
+      read -p "   Path to existing Obsidian vault [$current_target]: " OBSIDIAN_VAULT_SOURCE
+      OBSIDIAN_VAULT_SOURCE="${OBSIDIAN_VAULT_SOURCE:-$current_target}"
     else
-      OBSIDIAN_VAULT="$current_target"
+      OBSIDIAN_VAULT_SOURCE="$current_target"
     fi
-  elif prompt_yes_no "📓 Set up Obsidian vault (for Claude/Codex config)?"; then
-    read -p "   Enter Obsidian vault path: " OBSIDIAN_VAULT
+  elif prompt_yes_no "📓 Link an existing Obsidian vault (for Claude/Codex config)?"; then
+    echo "   The vault must already exist -- setup links it, it does not create it."
+    read -p "   Path to existing Obsidian vault (linked to ~/src/obsidian): " OBSIDIAN_VAULT_SOURCE
   fi
 fi
 
@@ -1416,17 +1420,19 @@ if [[ "$LINK_DOTFILES" == true ]]; then
     link_file "$SCRIPT_DIR/.config/starship.toml" "$HOME/.config/starship.toml"
   fi
 
-  # Obsidian vault symlink (stable path for all tools)
-  if [[ -z "$OBSIDIAN_VAULT" ]]; then
-    echo "Skipping Obsidian/Claude/Codex linking -- no vault path provided"
-    echo "  Re-run with: ./setup-macos.sh /path/to/obsidian/vault"
-  elif [[ ! -d "$OBSIDIAN_VAULT/projects" ]]; then
-    echo "Error: $OBSIDIAN_VAULT/projects not found -- is this the right vault path?"
+  # Symlink the real vault ($OBSIDIAN_VAULT_SOURCE) to ~/src/obsidian, the stable
+  # path every tool below points at.
+  if [[ -z "$OBSIDIAN_VAULT_SOURCE" ]]; then
+    echo "Skipping Obsidian/Claude/Codex linking -- no existing vault path provided"
+    echo "  Re-run with: ./setup-macos.sh /path/to/existing/obsidian/vault"
+  elif [[ ! -d "$OBSIDIAN_VAULT_SOURCE/projects" ]]; then
+    echo "Error: $OBSIDIAN_VAULT_SOURCE/projects not found"
+    echo "  Expected an existing Obsidian vault containing a projects/ dir."
     exit 1
   fi
 
-  if [[ -n "$OBSIDIAN_VAULT" && -d "$OBSIDIAN_VAULT/projects" ]]; then
-    link_dir "$OBSIDIAN_VAULT" "$HOME/src/obsidian"
+  if [[ -n "$OBSIDIAN_VAULT_SOURCE" && -d "$OBSIDIAN_VAULT_SOURCE/projects" ]]; then
+    link_dir "$OBSIDIAN_VAULT_SOURCE" "$HOME/src/obsidian"
 
     # Google Drive symlink (stable path for agents and scripts)
     if [[ -n "$GOOGLE_ACCOUNT" ]]; then
