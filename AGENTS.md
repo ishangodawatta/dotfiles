@@ -6,7 +6,7 @@ Agent-facing guidance. This file extends `README.md` — see it for setup, vault
 
 - [`README.md`](README.md) — prerequisites, bootstrap command, [vault layout](README.md#vault-layout), [symlink wiring](README.md#how-the-symlinks-are-wired), [adding a new project](README.md#adding-a-new-project), [failure modes](README.md#failure-modes), cross-machine sync.
 - [`setup-symlinks.sh`](setup-symlinks.sh) — the single copy of the symlink wiring, sourced by both setup scripts and runnable standalone. Consult it before adding new linking logic.
-- [`setup-macos.sh`](setup-macos.sh) / [`setup-debian.sh`](setup-debian.sh) — platform provisioning, plus the platform-only links (karabiner, raycast).
+- [`setup-macos.sh`](setup-macos.sh) / [`setup-debian.sh`](setup-debian.sh) — platform provisioning, plus the platform-only links (karabiner) and the Raycast next-steps stage.
 
 ## Invariants
 

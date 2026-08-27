@@ -1390,10 +1390,9 @@ if [[ "$LINK_DOTFILES" == true ]]; then
   mkdir -p "$HOME/.config/karabiner"
   link_file "$SCRIPT_DIR/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json"
 
-  # Raycast owns ~/.config/raycast/extensions (a symlink into the app bundle), so
-  # link the scripts subdirectory only and leave the parent as a real directory.
-  mkdir -p "$HOME/.config/raycast"
-  link_dir "$SCRIPT_DIR/.config/raycast/scripts" "$HOME/.config/raycast/scripts"
+  # Raycast config is not tracked here (see the Raycast stage in the next-steps
+  # summary); clear the link earlier runs created.
+  remove_legacy_raycast_scripts_link
 
   # Symlink the real vault ($OBSIDIAN_VAULT_SOURCE) to ~/src/obsidian, the stable
   # path every tool below points at.
@@ -1542,10 +1541,36 @@ if [[ "$INSTALL_MYSQL" == true ]]; then
 else
   echo "3. Open VS Code and install your preferred extensions"
 fi
-if [[ "$INSTALL_RAYCAST" == true ]]; then
+# Raycast stage. Its real config -- hotkeys, aliases, quicklinks, snippets,
+# extension preferences, registered script directories -- lives in SQLite
+# databases under ~/Library/Application Support/com.raycast.macos/, not in any
+# file this repo could track. The only supported way to move it between Macs is
+# Raycast's own export/import, so print the steps rather than pretend to automate.
+if ls /Applications/ 2>/dev/null | grep -qi "raycast"; then
   echo ""
-  echo "🔍 Raycast: free Cmd+Space by disabling Spotlight in:"
-  echo "   System Settings → Keyboard → Keyboard Shortcuts → Spotlight"
+  echo "Raycast: settings are NOT managed by this repo -- move them by hand."
+  echo ""
+  echo "  Carrying config over from another Mac:"
+  echo "    1. On THIS Mac, run the Raycast command 'Export Settings & Data'"
+  echo "       first, as a rollback point. Import replaces local settings"
+  echo "       rather than merging them."
+  echo "    2. On the SOURCE Mac, run 'Export Settings & Data' to write a"
+  echo "       .rayconfig file."
+  echo "    3. Copy the .rayconfig across (AirDrop is easiest). Keep it private"
+  echo "       and never commit it -- it can carry extension API tokens."
+  echo "    4. On THIS Mac, run 'Import Settings & Data' and select the file."
+  echo ""
+  echo "  Script commands are not included in a .rayconfig -- only the directory"
+  echo "  paths are. Copy any script files across separately, then re-add the"
+  echo "  directory in Settings -> Extensions -> Script Commands."
+  echo ""
+  echo "  On Raycast Pro, Settings -> Cloud Sync keeps both Macs in step and"
+  echo "  makes the steps above unnecessary."
+  if [[ "$INSTALL_RAYCAST" == true ]]; then
+    echo ""
+    echo "  Free Cmd+Space by disabling Spotlight in:"
+    echo "    System Settings -> Keyboard -> Keyboard Shortcuts -> Spotlight"
+  fi
 fi
 
 echo ""

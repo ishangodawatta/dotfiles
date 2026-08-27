@@ -12,7 +12,7 @@
 # When sourced, the caller supplies SCRIPT_DIR, SHELL_FILES and CONFIG_DIRS.
 # link_file()/link_dir() are defined here for both modes; the one platform
 # difference (BSD realpath has no -m flag) is handled by _same_path.
-# Platform-only links (karabiner and raycast on macOS) stay in their own script.
+# Platform-only links (karabiner on macOS) stay in their own script.
 
 # realpath -m normalises .. and symlinks, but BSD realpath has no -m flag, so
 # fall back to a plain string compare on macOS.
@@ -67,6 +67,19 @@ link_dir() {
   mkdir -p "$(dirname "$dest")"
   ln -s "$src" "$dest"
   echo "  link $dest"
+}
+
+# Raycast's real config (hotkeys, aliases, quicklinks, snippets, extension
+# preferences) lives in SQLite databases under Library/Application Support and
+# was never tracked here; only the script-commands dir ever was, and that is
+# gone too. Drop the link earlier runs created so it does not dangle.
+remove_legacy_raycast_scripts_link() {
+  local legacy="$HOME/.config/raycast/scripts"
+  local expected="$SCRIPT_DIR/.config/raycast/scripts"
+  if [[ -L "$legacy" && "$(readlink "$legacy")" == "$expected" ]]; then
+    rm "$legacy"
+    echo "  remove legacy $legacy"
+  fi
 }
 
 link_shell_files() {
@@ -163,10 +176,9 @@ _symlinks_standalone_main() {
   link_shell_files
   link_config_dirs
   if [[ "$(uname -s)" == Darwin ]]; then
-    mkdir -p "$HOME/.config/karabiner" "$HOME/.config/raycast"
+    mkdir -p "$HOME/.config/karabiner"
     link_file "$SCRIPT_DIR/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json"
-    # Raycast owns ~/.config/raycast/extensions, so link the scripts subdir only.
-    link_dir "$SCRIPT_DIR/.config/raycast/scripts" "$HOME/.config/raycast/scripts"
+    remove_legacy_raycast_scripts_link
   fi
   if [[ -d "$HOME/src/obsidian/projects/agents" ]]; then
     echo "Linking agent config from the vault"
