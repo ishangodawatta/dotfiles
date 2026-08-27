@@ -1596,10 +1596,13 @@ if [[ "$LINK_DOTFILES" == true ]]; then
     for project_path in "$HOME/src/obsidian/projects/agents"/*/; do
       project=$(basename "$project_path")
       project_path="${project_path%/}"  # strip trailing slash from glob
-      # Skip non-project subdirs (skills, src, hidden)
-      [[ "$project" == "skills" || "$project" == "src" || "$project" == .* ]] && continue
+      # Skip non-project subdirs (skills, hidden)
+      [[ "$project" == "skills" || "$project" == .* ]] && continue
       # Only treat as a project if it has a memory/ dir
       [[ -d "$project_path/memory" ]] || continue
+      # 'src' collides with the ~/src/<project> convention below, which would resolve
+      # it to ~/src/src. Honour it only when .project-root states the real path.
+      [[ "$project" == "src" && ! -f "$project_path/.project-root" ]] && continue
       if [[ -f "$project_path/.project-root" ]]; then
         actual_project_root=$(cat "$project_path/.project-root")
         # Stored ~-relative so one vault serves hosts with different usernames.
