@@ -127,9 +127,10 @@ avoid drifting stale, unlike the one-off Extreme_SSD mirror above.
   HDD even if Lexar's content is later removed). Exits cleanly if either
   drive isn't currently connected, since both are removable.
 - [`setup-hdd-lexar-sync.sh`](setup-hdd-lexar-sync.sh): installs the above
-  as a systemd timer (`hdd-lexar-sync.timer`, daily, `Persistent=true` so
-  a missed run catches up after the laptop's been off/asleep at the
-  scheduled time, rather than silently skipping like plain cron would).
+  as a systemd timer (`hdd-lexar-sync.timer`, every 6 hours,
+  `Persistent=true` so a missed run catches up after the laptop's been
+  off/asleep at the scheduled time, rather than silently skipping like
+  plain cron would).
   Idempotent, portable to another Debian device (derives the invoking
   user and script path at run time rather than hardcoding them) -- run as
   `sudo ./setup-hdd-lexar-sync.sh`.
@@ -267,8 +268,8 @@ Applies to `Movies`, `TV_Series`, and `Other_Videos` on both drives:
 - [x] Set up the HDD as a Samba network share (`[hdd]` ->
       `/mnt/trans_2tb`), same pattern as Lexar's `[lexar]` share
 - [x] Automate the HDD <-> Lexar re-sync -- `hdd-lexar-sync.timer`
-      (systemd, daily, `Persistent=true` so a missed run catches up after
-      the laptop's been off), installed via
+      (systemd, every 6 hours, `Persistent=true` so a missed run catches
+      up after the laptop's been off), installed via
       [`setup-hdd-lexar-sync.sh`](setup-hdd-lexar-sync.sh). Verified
       working with a manual trigger (`status=0/SUCCESS`, logs via
       `journalctl -u hdd-lexar-sync.service`).
