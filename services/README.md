@@ -8,21 +8,20 @@ personal drive.** Lexar is now the primary store for all media services --
 Jellyfin and Immich (Plex was migrated too, then fully removed in favour
 of standardising on Jellyfin alone, see "Plex -- removed" below).
 Extreme_SSD has been fully mirrored onto a backup HDD (see "Extreme_SSD ->
-HDD mirror" below, whole-drive verified with zero gaps) and is now **ready
-to disconnect**.
+HDD mirror" below, whole-drive verified with zero gaps) and **has been
+disconnected** -- free for Ishan to repurpose as a personal drive. The HDD
+is now the redundancy backup, kept in sync against the **Lexar** (the live
+source for Jellyfin/Immich, not Extreme_SSD's now-frozen snapshot), and is
+also set up as a Samba network share (see "Samba" below).
 
 ## Drives
 
-- **Extreme_SSD** (SanDisk Extreme 55AE, exFAT, 1.8TB) -- mounted at
-  `/media/ishan/Extreme_SSD` (udisks2) and `/mnt/extreme_ssd` (fstab,
-  `UUID=BA1E-637C`). Being phased out; kept as an exact mirror of the Lexar's
-  `Movies`/`TV_Series`/`Other_Videos`/`family_media` structure in the
-  meantime, so it's a drop-in fallback if the Lexar has problems. Any
-  reorganisation (renames, new folders) should happen on Extreme_SSD first,
-  then be copied to the Lexar, so the mirror never drifts. Still holds a lot
-  of unrelated personal data (`work`, `projects`, `wedding_nov_2024`, etc.)
-  that was never part of this migration and has no copy elsewhere -- do not
-  wipe until that's backed up separately.
+- **Extreme_SSD** (SanDisk Extreme 55AE, exFAT, 1.8TB) -- **disconnected**
+  as of 2026-08-27, mirror confirmed complete first (see "Extreme_SSD ->
+  HDD mirror" below). Its old fstab entry (`UUID=BA1E-637C`,
+  `/mnt/extreme_ssd`) is still in `/etc/fstab` -- harmless (`nofail`), left
+  in place in case it's ever reconnected, not cleaned up. Free for Ishan to
+  repurpose as a personal drive.
 - **Lexar** (WD Black NVMe in a Lexar M.2 USB enclosure, exFAT, 932GB) --
   primary store for Jellyfin and Immich (Plex was migrated here too, then
   removed entirely -- see "Plex -- removed"). Stable fstab
@@ -34,14 +33,16 @@ to disconnect**.
   20Gbps-capable Thunderbolt controller. Doesn't matter for Jellyfin
   streaming or Immich sync (both need a small fraction of that bandwidth);
   it only means bulk copies onto the drive take longer than they need to.
-- **HDD** (Seagate ST2000LM007, exFAT, 1.8TB, labelled `Trans_2TB`, mounted
-  at `/media/ishan/Trans_2TB`) -- redundancy backup target. Originally
+- **HDD** (Seagate ST2000LM007, exFAT, 1.8TB, labelled `Trans_2TB`) --
+  redundancy backup target, now Extreme_SSD's replacement. Originally
   planned just for Immich; scope expanded to a full mirror of Extreme_SSD
-  (see "Extreme_SSD -> HDD mirror" below), since the goal is to let
-  Extreme_SSD be disconnected and repurposed once this HDD covers everything
-  it held. Prone to intermittently dropping off USB during long transfers --
-  if a command suddenly can't see `/media/ishan/Trans_2TB`, check `lsblk`
-  and reconnect the cable rather than assuming something's broken.
+  (see "Extreme_SSD -> HDD mirror" below). Stable fstab mount at
+  `/mnt/trans_2tb` (`UUID=445C-BD1E`, `x-systemd.automount`), set up via
+  [`setup-hdd-samba.sh`](setup-hdd-samba.sh) -- same pattern as
+  Extreme_SSD's/Lexar's mounts. Also exposed as a Samba share (see
+  "Samba" below). Prone to intermittently dropping off USB during long
+  transfers -- if a command suddenly can't see it, check `lsblk` and
+  reconnect the cable rather than assuming something's broken.
 
 ## Extreme_SSD -> HDD mirror (complete)
 
@@ -150,11 +151,18 @@ from any device, e.g. drag-and-drop from the iPhone's Files app.
 - Share `[lexar]` -> `/mnt/lexar_ssd`, config in `/etc/samba/smb.conf`
   (system file, sudo-only, not tracked by this repo -- documented here
   instead).
+- Share `[hdd]` -> `/mnt/trans_2tb` (the `Trans_2TB` backup HDD), added the
+  same way once the Extreme_SSD -> HDD mirror was complete and Extreme_SSD
+  disconnected. Set up via
+  [`setup-hdd-samba.sh`](setup-hdd-samba.sh) -- idempotent, does the fstab
+  mount + Samba share block + `smbd` restart in one go, run as
+  `sudo ./setup-hdd-samba.sh`.
 - Auth: separate Samba password for `ishan`, set via `sudo smbpasswd -a
-  ishan` (distinct from the system login password).
-- Access from any device: `smb://xps-9530.tail646a3d.ts.net/lexar`
-  (Tailscale MagicDNS). Confirmed working from the iPhone's Files app
-  (Browse -> ... -> Connect to Server).
+  ishan` (distinct from the system login password) -- shared across both
+  shares, no per-share password.
+- Access from any device: `smb://xps-9530.tail646a3d.ts.net/lexar` or
+  `.../hdd` (Tailscale MagicDNS). Confirmed working from the iPhone's Files
+  app (Browse -> ... -> Connect to Server).
 - **Restricted to the tailnet via `hosts allow`/`hosts deny`, not interface
   binding.** Tried `interfaces = <tailscale ip>/32` + `bind interfaces only
   = yes` first (the "obvious" way to keep smbd off the LAN/other Wi-Fi) --
@@ -227,8 +235,14 @@ Applies to `Movies`, `TV_Series`, and `Other_Videos` on both drives:
 - [x] Attach redundancy HDD (`Trans_2TB`)
 - [x] Finish HDD <-> Extreme_SSD mirror -- whole-drive verified, zero
       missing files
-- [ ] Disconnect Extreme_SSD (ready -- mirror confirmed complete)
-- [ ] After Extreme_SSD is disconnected: sync the HDD against the **Lexar**
-      (not Extreme_SSD) to catch up on anything Jellyfin/Immich have added
-      since the original Lexar migration -- Extreme_SSD's snapshot will be
-      stale by that point
+- [x] Disconnect Extreme_SSD
+- [x] Sync both Extreme_SSD and the HDD against the **Lexar** to catch up
+      on Jellyfin/Immich activity since the original migration (done just
+      before disconnecting Extreme_SSD, so both were current at
+      disconnect time)
+- [x] Set up the HDD as a Samba network share (`[hdd]` ->
+      `/mnt/trans_2tb`), same pattern as Lexar's `[lexar]` share
+- [ ] Periodically re-sync the HDD against the Lexar going forward, now
+      that Extreme_SSD is gone and the HDD is the only backup -- no
+      automation set up for this yet, it's a manual `rsync` per the
+      commands used in this file's git history
