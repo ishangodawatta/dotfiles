@@ -1016,8 +1016,8 @@ if [[ "$INSTALL_RAYCAST" == true ]]; then
   echo "🔍 Installing Raycast..."
   brew install --cask raycast
   echo "✅ Raycast installed"
-  echo "   To free Cmd+Space for Raycast, disable Spotlight in:"
-  echo "   System Settings → Keyboard → Keyboard Shortcuts → Spotlight"
+  # Cmd+Space guidance lives in the Raycast stage at the end, in full. Do not
+  # restate a partial version here -- the short form omitted the ordering rule.
 fi
 
 # Visual Studio Code
@@ -1581,6 +1581,11 @@ fi
 # databases under ~/Library/Application Support/com.raycast.macos/, not in any
 # file this repo could track. The only supported way to move it between Macs is
 # Raycast's own export/import, so print the steps rather than pretend to automate.
+#
+# The Cmd+Space step is deliberately OUTSIDE the INSTALL_RAYCAST gate. It used to
+# print only on a fresh install, so anyone importing config onto an already
+# installed Raycast never saw it and was left with Spotlight silently winning the
+# hotkey. It applies to every Mac with Raycast on it, however Raycast got there.
 if ls /Applications/ 2>/dev/null | grep -qi "raycast"; then
   echo ""
   echo "Raycast: settings are NOT managed by this repo -- move them by hand."
@@ -1599,13 +1604,18 @@ if ls /Applications/ 2>/dev/null | grep -qi "raycast"; then
   echo "  paths are. Copy any script files across separately, then re-add the"
   echo "  directory in Settings -> Extensions -> Script Commands."
   echo ""
+  echo "  Making Cmd+Space open Raycast (needed on every Mac, imported or not):"
+  echo "    1. System Settings -> Keyboard -> Keyboard Shortcuts -> Spotlight"
+  echo "       -> untick 'Show Spotlight search'."
+  echo "    2. Raycast Settings -> General -> Raycast Hotkey -> press Cmd+Space."
+  echo "    Order matters. Raycast cannot take a hotkey macOS still owns, and the"
+  echo "    binding fails silently rather than warning you. An imported config"
+  echo "    usually already carries Cmd+Space from the source Mac, in which case"
+  echo "    step 1 on its own is enough."
+  echo ""
   echo "  On Raycast Pro, Settings -> Cloud Sync keeps both Macs in step and"
-  echo "  makes the steps above unnecessary."
-  if [[ "$INSTALL_RAYCAST" == true ]]; then
-    echo ""
-    echo "  Free Cmd+Space by disabling Spotlight in:"
-    echo "    System Settings -> Keyboard -> Keyboard Shortcuts -> Spotlight"
-  fi
+  echo "  makes the export/import steps above unnecessary. It does NOT cover the"
+  echo "  Cmd+Space step -- that is macOS state, not Raycast state."
 fi
 
 echo ""
