@@ -152,7 +152,9 @@ INSTALL_ROFI=false
 INSTALL_PICOM=false
 INSTALL_WHATSAPP=false
 INSTALL_RCLONE=false
-INSTALL_PLEX=false
+INSTALL_TAILSCALE=false
+INSTALL_IMMICH=false
+INSTALL_JELLYFIN=false
 INSTALL_COPYQ=false
 INSTALL_REMMINA=false
 INSTALL_WINE=false
@@ -650,13 +652,31 @@ if command -v dpkg &>/dev/null; then
     echo "✅ rclone already installed"
   fi
 
-  # Check Plex Media Server
-  if ! command -v plexmediaserver &>/dev/null && ! dpkg -l | grep -q plexmediaserver; then
-    if prompt_yes_no "🎬 Install Plex Media Server?"; then
-      INSTALL_PLEX=true
+  # Check Tailscale
+  if ! command -v tailscale &>/dev/null; then
+    if prompt_yes_no "🔐 Install Tailscale (mesh VPN)?"; then
+      INSTALL_TAILSCALE=true
     fi
   else
-    echo "✅ Plex Media Server already installed"
+    echo "✅ Tailscale already installed"
+  fi
+
+  # Check Immich stack (Docker Compose repo, see services/README.md)
+  if [[ ! -d "$HOME/src/immich-app" ]]; then
+    if prompt_yes_no "🖼️  Clone the Immich stack (self-hosted photos)?"; then
+      INSTALL_IMMICH=true
+    fi
+  else
+    echo "✅ Immich stack already cloned"
+  fi
+
+  # Check Jellyfin stack (Docker Compose repo, see services/README.md)
+  if [[ ! -d "$HOME/src/jellyfin-app" ]]; then
+    if prompt_yes_no "🎬 Clone the Jellyfin stack (media server)?"; then
+      INSTALL_JELLYFIN=true
+    fi
+  else
+    echo "✅ Jellyfin stack already cloned"
   fi
 
   # Check CopyQ (clipboard manager - Maccy alternative)
@@ -1222,17 +1242,57 @@ if [[ "$INSTALL_RCLONE" == true ]]; then
   echo "ℹ️  Run 'rclone config' to set up cloud storage providers"
 fi
 
-# Plex Media Server
-if [[ "$INSTALL_PLEX" == true ]]; then
-  echo "🎬 Installing Plex Media Server..."
-  # Download and install Plex
-  wget -O /tmp/plexmediaserver.deb https://downloads.plex.tv/plex-media-server-new/1.40.1.8227-c0dd5a73e/debian/plexmediaserver_1.40.1.8227-c0dd5a73e_amd64.deb
+# Tailscale (mesh VPN)
+if [[ "$INSTALL_TAILSCALE" == true ]]; then
+  echo "🔐 Installing Tailscale..."
   wait_for_apt
-  sudo apt install -y /tmp/plexmediaserver.deb
-  rm /tmp/plexmediaserver.deb
-  echo "✅ Plex Media Server installed"
-  echo "ℹ️  Access Plex at http://localhost:32400/web"
+  sudo apt install -y ca-certificates curl
+  # Tailscale publishes separate debian/ and ubuntu/ repo paths, so derive the
+  # distro ID as well as the codename rather than hardcoding either.
+  tailscale_id="$(. /etc/os-release && echo "$ID")"
+  tailscale_codename="$(. /etc/os-release && echo "$VERSION_CODENAME")"
+  tailscale_repo="https://pkgs.tailscale.com/stable/${tailscale_id}/${tailscale_codename}"
+  # Guarded: set -e is on, and an unsupported ID/codename 404s here.
+  if sudo curl -fsSL "${tailscale_repo}.noarmor.gpg" -o /usr/share/keyrings/tailscale-archive-keyring.gpg &&
+    sudo curl -fsSL "${tailscale_repo}.tailscale-keyring.list" -o /etc/apt/sources.list.d/tailscale.list; then
+    wait_for_apt
+    sudo apt update
+    wait_for_apt
+    sudo apt install -y tailscale
+    sudo systemctl enable --now tailscaled
+    echo "✅ Tailscale installed"
+    echo "ℹ️  Run 'sudo tailscale up' to authenticate and join the tailnet"
+  else
+    echo "⚠️  No Tailscale apt repo for ${tailscale_id} ${tailscale_codename} -- see https://tailscale.com/download/linux"
+  fi
 fi
+
+# Immich stack (Docker Compose repo)
+if [[ "$INSTALL_IMMICH" == true ]]; then
+  echo "🖼️  Cloning the Immich stack..."
+  mkdir -p "$HOME/src"
+  # Guarded: set -e is on, and the clone needs an SSH key already on the machine.
+  if git clone git@github.com:ishangodawatta/immich-app.git "$HOME/src/immich-app"; then
+    echo "✅ Immich stack cloned to ~/src/immich-app"
+    echo "ℹ️  Create .env (UPLOAD_LOCATION, DB_DATA_LOCATION) before first start"
+  else
+    echo "⚠️  Immich clone failed -- check SSH access to GitHub, then re-run"
+  fi
+fi
+
+# Jellyfin stack (Docker Compose repo)
+if [[ "$INSTALL_JELLYFIN" == true ]]; then
+  echo "🎬 Cloning the Jellyfin stack..."
+  mkdir -p "$HOME/src"
+  if git clone git@github.com:ishangodawatta/jellyfin-app.git "$HOME/src/jellyfin-app"; then
+    echo "✅ Jellyfin stack cloned to ~/src/jellyfin-app"
+    echo "ℹ️  Media bind-mounts expect the Lexar at /mnt/lexar_ssd"
+  else
+    echo "⚠️  Jellyfin clone failed -- check SSH access to GitHub, then re-run"
+  fi
+fi
+
+# Both stacks are started by ./launch_debian_services.sh
 
 # CopyQ (clipboard manager)
 if [[ "$INSTALL_COPYQ" == true ]]; then
@@ -1610,7 +1670,9 @@ command -v rofi >/dev/null && echo "✅ Rofi: $(rofi -version | head -n1)"
 command -v picom >/dev/null && echo "✅ Picom: $(picom --version 2>&1 | head -n1)"
 command -v wasistlos >/dev/null && echo "✅ WasIstLos (WhatsApp): Installed"
 command -v rclone >/dev/null && echo "✅ rclone: $(rclone --version | head -n1)"
-dpkg -l 2>/dev/null | grep -q plexmediaserver && echo "✅ Plex Media Server: Installed"
+command -v tailscale >/dev/null && echo "✅ Tailscale: $(tailscale version | head -n1)"
+[[ -d "$HOME/src/immich-app" ]] && echo "✅ Immich stack: ~/src/immich-app"
+[[ -d "$HOME/src/jellyfin-app" ]] && echo "✅ Jellyfin stack: ~/src/jellyfin-app"
 command -v copyq >/dev/null && echo "✅ CopyQ: Installed"
 command -v remmina >/dev/null && echo "✅ Remmina: Installed"
 command -v nvim >/dev/null && echo "✅ Neovim: $(nvim --version | head -n1)"

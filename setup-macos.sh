@@ -111,6 +111,8 @@ INSTALL_AEROSPACE=false
 INSTALL_GOOGLE_CHROME=false
 INSTALL_GOOGLE_DRIVE=false
 INSTALL_TRANSMISSION=false
+INSTALL_TAILSCALE=false
+INSTALL_JELLYFIN=false
 INSTALL_OBSIDIAN=false
 INSTALL_WHATSAPP=false
 INSTALL_SPOTIFY=false
@@ -324,6 +326,24 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     fi
   else
     echo "✅ Transmission already installed"
+  fi
+
+  # Check Tailscale
+  if ! ls /Applications/ 2>/dev/null | grep -qi "tailscale"; then
+    if prompt_yes_no "🔐 Install Tailscale (mesh VPN)?"; then
+      INSTALL_TAILSCALE=true
+    fi
+  else
+    echo "✅ Tailscale already installed"
+  fi
+
+  # Check Jellyfin Media Player
+  if ! ls /Applications/ 2>/dev/null | grep -qi "jellyfin"; then
+    if prompt_yes_no "🎬 Install Jellyfin Media Player (client for the home server)?"; then
+      INSTALL_JELLYFIN=true
+    fi
+  else
+    echo "✅ Jellyfin Media Player already installed"
   fi
 
   # Check Obsidian
@@ -1068,6 +1088,21 @@ if [[ "$INSTALL_TRANSMISSION" == true ]]; then
   echo "📥 Installing Transmission (BitTorrent client)..."
   brew install --cask transmission
   echo "✅ Transmission installed"
+fi
+
+# Tailscale
+if [[ "$INSTALL_TAILSCALE" == true ]]; then
+  echo "🔐 Installing Tailscale (mesh VPN)..."
+  # Cask was renamed upstream: the old "tailscale" token now redirects here.
+  brew install --cask tailscale-app
+  echo "✅ Tailscale installed (log in via the menu bar to join the tailnet)"
+fi
+
+# Jellyfin Media Player
+if [[ "$INSTALL_JELLYFIN" == true ]]; then
+  echo "🎬 Installing Jellyfin Media Player..."
+  brew install --cask jellyfin-media-player
+  echo "✅ Jellyfin Media Player installed"
 fi
 
 # Obsidian

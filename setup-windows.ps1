@@ -84,7 +84,7 @@ $INSTALL_PYTHON = $false
 $INSTALL_FLUX = $false
 $INSTALL_CLIPCLIP = $false
 $INSTALL_GOOGLE_CHROME = $false
-$INSTALL_PLEX = $false
+$INSTALL_TAILSCALE = $false
 $INSTALL_GOOGLE_DRIVE = $false
 $INSTALL_QBITTORRENT = $false
 $INSTALL_OBSIDIAN = $false
@@ -229,12 +229,12 @@ if (-not (Test-WingetPackage "Google.Chrome")) {
     Write-Host "[OK] Google Chrome already installed" -ForegroundColor Green
 }
 
-if (-not (Test-WingetPackage "Plex.PlexMediaServer")) {
-    if (Prompt-YesNo "[PLEX] Install Plex Media Server?") {
-        $INSTALL_PLEX = $true
+if (-not (Test-WingetPackage "tailscale.tailscale")) {
+    if (Prompt-YesNo "[TAIL] Install Tailscale (mesh VPN)?") {
+        $INSTALL_TAILSCALE = $true
     }
 } else {
-    Write-Host "[OK] Plex Media Server already installed" -ForegroundColor Green
+    Write-Host "[OK] Tailscale already installed" -ForegroundColor Green
 }
 
 if (-not (Test-WingetPackage "Google.GoogleDrive")) {
@@ -400,7 +400,7 @@ $apps = @(
     @{Flag = $INSTALL_FLUX; Name = "f.lux"; Id = "flux.flux"; Emoji = "[FLUX]"},
     @{Flag = $INSTALL_CLIPCLIP; Name = "ClipClip"; Id = "Vitzo.ClipClip"; Emoji = "[CLIP]"},
     @{Flag = $INSTALL_GOOGLE_CHROME; Name = "Google Chrome"; Id = "Google.Chrome"; Emoji = "[CHROME]"},
-    @{Flag = $INSTALL_PLEX; Name = "Plex Media Server"; Id = "Plex.PlexMediaServer"; Emoji = "[PLEX]"},
+    @{Flag = $INSTALL_TAILSCALE; Name = "Tailscale"; Id = "tailscale.tailscale"; Emoji = "[TAIL]"},
     @{Flag = $INSTALL_GOOGLE_DRIVE; Name = "Google Drive"; Id = "Google.GoogleDrive"; Emoji = "[DRIVE]"},
     @{Flag = $INSTALL_QBITTORRENT; Name = "qBittorrent"; Id = "qBittorrent.qBittorrent"; Emoji = "[QBIT]"},
     @{Flag = $INSTALL_OBSIDIAN; Name = "Obsidian"; Id = "Obsidian.Obsidian"; Emoji = "[OBS]"},
