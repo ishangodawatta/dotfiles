@@ -1545,21 +1545,14 @@ if [[ "$LINK_DOTFILES" == true ]]; then
     fi
   }
 
-  # Shell config files
-  for f in .bashrc .zprofile .zshrc .tmux.conf; do
-    link_file "$SCRIPT_DIR/$f" "$HOME/$f"
-  done
+  # Shared symlink wiring (see setup-symlinks.sh)
+  source "$SCRIPT_DIR/setup-symlinks.sh"
 
-  # .config directories
-  mkdir -p "$HOME/.config"
-  for d in ghostty nvim btop htop; do
-    link_dir "$SCRIPT_DIR/.config/$d" "$HOME/.config/$d"
-  done
+  SHELL_FILES=(.bashrc .zprofile .zshrc .tmux.conf)
+  link_shell_files
 
-  # .config files (symlink file, not dir)
-  if [[ -f "$SCRIPT_DIR/.config/starship.toml" ]]; then
-    link_file "$SCRIPT_DIR/.config/starship.toml" "$HOME/.config/starship.toml"
-  fi
+  CONFIG_DIRS=(ghostty nvim btop htop)
+  link_config_dirs
 
   # Symlink the real vault ($OBSIDIAN_VAULT_SOURCE) to ~/src/obsidian, the stable
   # path every tool below points at.
@@ -1582,52 +1575,7 @@ if [[ "$LINK_DOTFILES" == true ]]; then
       echo "$broken_links" | sed 's/^/  /'
     fi
 
-    # Claude Code config (all content lives in vault)
-    mkdir -p "$HOME/.claude"
-    link_file "$HOME/src/obsidian/projects/agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
-    link_file "$HOME/src/obsidian/projects/agents/settings.json" "$HOME/.claude/settings.json"
-    link_dir "$HOME/src/obsidian/projects/agents/skills" "$HOME/.claude/skills"
-
-    # Claude Code project memory + project-scoped instructions (auto-discovered from vault).
-    # Default convention: vault project name matches a git repo at ~/src/<project>.
-    # Override: if the vault project dir contains a .project-root file, its content is treated
-    # as the actual absolute project root path (used for non-git projects like Drive folders).
-    # The skill `vault-claude-memory` writes .project-root automatically when vaulting non-git projects.
-    for project_path in "$HOME/src/obsidian/projects/agents"/*/; do
-      project=$(basename "$project_path")
-      project_path="${project_path%/}"  # strip trailing slash from glob
-      # Skip non-project subdirs (skills, hidden)
-      [[ "$project" == "skills" || "$project" == .* ]] && continue
-      # Only treat as a project if it has a memory/ dir
-      [[ -d "$project_path/memory" ]] || continue
-      # 'src' collides with the ~/src/<project> convention below, which would resolve
-      # it to ~/src/src. Honour it only when .project-root states the real path.
-      [[ "$project" == "src" && ! -f "$project_path/.project-root" ]] && continue
-      if [[ -f "$project_path/.project-root" ]]; then
-        actual_project_root=$(cat "$project_path/.project-root")
-        # Stored ~-relative so one vault serves hosts with different usernames.
-        # Expand before deriving the key: a tilde read from a file is not expanded by the shell.
-        actual_project_root="${actual_project_root/#\~/$HOME}"
-        actual_project_root="${actual_project_root//\$HOME/$HOME}"
-        claude_key=$(echo "$actual_project_root" | sed 's/[^a-zA-Z0-9-]/-/g')
-        claude_project_dir="$HOME/.claude/projects/$claude_key"
-      else
-        claude_project_dir="$HOME/.claude/projects/-home-$(whoami)-src-${project}"
-      fi
-      mkdir -p "$claude_project_dir"
-      link_dir "$project_path/memory" "$claude_project_dir/memory"
-      # Optional project-scoped instructions
-      if [[ -f "$project_path/AGENTS.md" ]]; then
-        link_file "$project_path/AGENTS.md" "$claude_project_dir/CLAUDE.md"
-      fi
-    done
-
-    # OpenAI Codex config, shared helpers, and cross-agent skills.
-    mkdir -p "$HOME/.codex" "$HOME/.agents"
-    link_file "$HOME/src/obsidian/projects/agents/codex-config.toml" "$HOME/.codex/config.toml"
-    link_file "$HOME/src/obsidian/projects/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
-    link_dir "$HOME/src/obsidian/projects/agents/bin" "$HOME/.agents/bin"
-    link_dir "$HOME/src/obsidian/projects/agents/skills" "$HOME/.agents/skills"
+    link_agent_config
     remove_legacy_codex_skills_link
 
     # Claude Code plugins (install from manifest if claude CLI is available)
