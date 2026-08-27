@@ -1,17 +1,73 @@
 #!/bin/bash
-# Shared symlink wiring, sourced by setup-macos.sh and setup-debian.sh.
+# Symlink wiring for dotfiles and agent config.
 #
-# Both scripts previously carried byte-identical copies of the agent-config
-# block, which is how the 'src' skip drifted out of sync with .project-root.
+# Two ways to use it:
+#   ./setup-symlinks.sh          run standalone to (re)create every symlink
+#   source setup-symlinks.sh     from setup-macos.sh / setup-debian.sh
 #
-# Callers must define link_file() and link_dir() before sourcing -- those stay
-# per-script because the self-referential-symlink guard differs (BSD realpath
-# has no -m flag) -- and set:
-#   SCRIPT_DIR   dotfiles checkout root
-#   SHELL_FILES  shell rc files to link into $HOME
-#   CONFIG_DIRS  ~/.config subdirectories to link
+# Both setup scripts previously carried byte-identical copies of the
+# agent-config block, which is how the 'src' skip drifted out of sync with the
+# .project-root override. This is the single copy.
 #
+# When sourced, the caller supplies SCRIPT_DIR, SHELL_FILES and CONFIG_DIRS.
+# link_file()/link_dir() are defined here for both modes; the one platform
+# difference (BSD realpath has no -m flag) is handled by _same_path.
 # Platform-only links (karabiner and raycast on macOS) stay in their own script.
+
+# realpath -m normalises .. and symlinks, but BSD realpath has no -m flag, so
+# fall back to a plain string compare on macOS.
+_same_path() {
+  if realpath -m / >/dev/null 2>&1; then
+    [[ "$(realpath -m "$1")" == "$(realpath -m "$2")" ]]
+  else
+    [[ "${1%/}" == "${2%/}" ]]
+  fi
+}
+
+link_file() {
+  local src="$1" dest="$2"
+  if [[ ! -f "$src" ]]; then
+    echo "  skip $(basename "$dest") (not found in dotfiles)"
+    return
+  fi
+  if _same_path "$src" "$dest"; then
+    echo "  ok $dest (already in place)"
+    return
+  fi
+  if [[ -L "$dest" ]]; then
+    rm "$dest"
+  elif [[ -f "$dest" ]]; then
+    mv "$dest" "$dest.bak"
+    echo "  backup $dest -> $dest.bak"
+  fi
+  mkdir -p "$(dirname "$dest")"
+  ln -s "$src" "$dest"
+  echo "  link $dest"
+}
+
+link_dir() {
+  local src="$1" dest="$2"
+  if [[ ! -d "$src" ]]; then
+    echo "  skip $(basename "$dest") (not found in dotfiles)"
+    return
+  fi
+  # Source and destination the same path (e.g. vault cloned directly to
+  # ~/src/obsidian). Linking would move the source aside and leave a
+  # self-referential symlink, breaking every dependent link.
+  if _same_path "$src" "$dest"; then
+    echo "  ok $dest (already in place)"
+    return
+  fi
+  if [[ -L "$dest" ]]; then
+    rm "$dest"
+  elif [[ -d "$dest" ]]; then
+    mv "$dest" "$dest.bak"
+    echo "  backup $dest -> $dest.bak"
+  fi
+  mkdir -p "$(dirname "$dest")"
+  ln -s "$src" "$dest"
+  echo "  link $dest"
+}
 
 link_shell_files() {
   for f in "${SHELL_FILES[@]}"; do
@@ -79,3 +135,51 @@ link_agent_config() {
   link_dir "$HOME/src/obsidian/projects/agents/bin" "$HOME/.agents/bin"
   link_dir "$HOME/src/obsidian/projects/agents/skills" "$HOME/.agents/skills"
 }
+
+# ---------------------------------------------------------------------------
+# Standalone mode: only runs when executed directly, not when sourced.
+# ---------------------------------------------------------------------------
+
+_symlinks_standalone_defaults() {
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+  remove_legacy_codex_skills_link() { :; }
+
+  case "$(uname -s)" in
+    Darwin)
+      SHELL_FILES=(.zprofile .zshrc .tmux.conf)
+      CONFIG_DIRS=(ghostty nvim btop htop aerospace)
+      ;;
+    *)
+      SHELL_FILES=(.bashrc .zprofile .zshrc .tmux.conf)
+      CONFIG_DIRS=(ghostty nvim btop htop)
+      ;;
+  esac
+}
+
+_symlinks_standalone_main() {
+  _symlinks_standalone_defaults
+  echo "Linking dotfiles from $SCRIPT_DIR"
+  link_shell_files
+  link_config_dirs
+  if [[ "$(uname -s)" == Darwin ]]; then
+    mkdir -p "$HOME/.config/karabiner" "$HOME/.config/raycast"
+    link_file "$SCRIPT_DIR/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json"
+    # Raycast owns ~/.config/raycast/extensions, so link the scripts subdir only.
+    link_dir "$SCRIPT_DIR/.config/raycast/scripts" "$HOME/.config/raycast/scripts"
+  fi
+  if [[ -d "$HOME/src/obsidian/projects/agents" ]]; then
+    echo "Linking agent config from the vault"
+    link_agent_config
+  else
+    echo "Skipping agent config -- ~/src/obsidian/projects/agents not found."
+    echo "  Run the full setup script first to link the vault."
+  fi
+  echo "Done."
+}
+
+# BASH_SOURCE equals $0 only when executed directly.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  set -e
+  _symlinks_standalone_main "$@"
+fi

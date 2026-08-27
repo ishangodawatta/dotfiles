@@ -1491,49 +1491,8 @@ if [[ "$LINK_DOTFILES" == true ]]; then
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
   # Helper: symlink a file (backs up existing non-symlink files)
-  link_file() {
-    local src="$1" dest="$2"
-    if [[ ! -f "$src" ]]; then
-      echo "  skip $(basename "$dest") (not found in dotfiles)"
-      return
-    fi
-    if [[ "$(realpath -m "$src")" == "$(realpath -m "$dest")" ]]; then
-      echo "  ok $dest (already in place)"
-      return
-    fi
-    if [[ -L "$dest" ]]; then
-      rm "$dest"
-    elif [[ -f "$dest" ]]; then
-      mv "$dest" "$dest.bak"
-      echo "  backup $dest -> $dest.bak"
-    fi
-    ln -s "$src" "$dest"
-    echo "  link $dest"
-  }
 
   # Helper: symlink a directory (backs up existing non-symlink dirs)
-  link_dir() {
-    local src="$1" dest="$2"
-    if [[ ! -d "$src" ]]; then
-      echo "  skip $(basename "$dest") (not found in dotfiles)"
-      return
-    fi
-    # Source and destination are the same path (e.g. vault cloned directly to
-    # ~/src/obsidian). Linking would move the source aside and leave a
-    # self-referential symlink, breaking every dependent link.
-    if [[ "$(realpath -m "$src")" == "$(realpath -m "$dest")" ]]; then
-      echo "  ok $dest (already in place)"
-      return
-    fi
-    if [[ -L "$dest" ]]; then
-      rm "$dest"
-    elif [[ -d "$dest" ]]; then
-      mv "$dest" "$dest.bak"
-      echo "  backup $dest -> $dest.bak"
-    fi
-    ln -s "$src" "$dest"
-    echo "  link $dest"
-  }
 
   # Remove the legacy Codex skill link only when an earlier setup run created it.
   remove_legacy_codex_skills_link() {
@@ -1685,3 +1644,7 @@ echo "3. Open VS Code and install your preferred extensions"
 if [[ "$INSTALL_I3" == true ]]; then
   echo "4. Log out and select i3 from your login manager to start using i3"
 fi
+
+echo ""
+echo "To refresh symlinks later without re-running this script:"
+echo "   ./setup-symlinks.sh"

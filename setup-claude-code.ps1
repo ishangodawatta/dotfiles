@@ -68,7 +68,7 @@ Link-Item -Source (Join-Path $VaultAgents "skills") -Dest (Join-Path $ClaudeDir 
 foreach ($projectDir in Get-ChildItem -Path $VaultAgents -Directory) {
     $project = $projectDir.Name
     $projectPath = $projectDir.FullName
-    if ($project -eq "skills" -or $project -eq "src" -or $project.StartsWith(".")) {
+    if ($project -eq "skills" -or $project.StartsWith(".")) {
         continue
     }
 
@@ -78,8 +78,18 @@ foreach ($projectDir in Get-ChildItem -Path $VaultAgents -Directory) {
     }
 
     $projectRootFile = Join-Path $projectPath ".project-root"
+    # 'src' collides with the ~/src/<project> convention below, which would
+    # resolve it to ~/src/src. Honour it only when .project-root states the path.
+    if ($project -eq "src" -and -not (Test-Path $projectRootFile -PathType Leaf)) {
+        continue
+    }
+
     if (Test-Path $projectRootFile -PathType Leaf) {
         $actualProjectRoot = (Get-Content $projectRootFile -Raw).Trim()
+        # Stored ~-relative so one vault serves hosts with different usernames.
+        # Expand first: a tilde read from a file is not expanded by the shell.
+        $actualProjectRoot = $actualProjectRoot -replace '^~', $env:USERPROFILE
+        $actualProjectRoot = $actualProjectRoot -replace '\$HOME', $env:USERPROFILE
         $claudeKey = $actualProjectRoot -replace "[^a-zA-Z0-9-]", "-"
     } else {
         $claudeKey = "-Users-$env:USERNAME-src-$project"
