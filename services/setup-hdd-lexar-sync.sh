@@ -42,13 +42,13 @@ User=${RUN_AS_USER}
 ExecStart=${SYNC_SCRIPT}
 EOF
 
-echo "==> Installing ${TIMER_FILE} (daily, catches up if the machine was off)"
+echo "==> Installing ${TIMER_FILE} (every 6h, catches up if the machine was off)"
 cat > "$TIMER_FILE" << 'EOF'
 [Unit]
-Description=Daily sync of backup HDD from Lexar SSD
+Description=Sync backup HDD from Lexar SSD every 6 hours
 
 [Timer]
-OnCalendar=daily
+OnCalendar=00/6:00:00
 Persistent=true
 RandomizedDelaySec=15m
 
