@@ -6,10 +6,10 @@ this repo, the app repos, and whatever's plugged in on a given day.
 **Goal: fully remove Extreme_SSD from this machine, then repurpose it as a
 personal drive.** Lexar is now the primary store for all media services --
 Jellyfin and Immich (Plex was migrated too, then fully removed in favour
-of standardising on Jellyfin alone, see "Plex -- removed" below). Extreme_SSD is being
-mirrored onto a backup HDD (see "Extreme_SSD -> HDD mirror" below) so it
-can be safely disconnected -- it's not being kept as a permanent fallback,
-it's on its way out once the mirror is complete.
+of standardising on Jellyfin alone, see "Plex -- removed" below).
+Extreme_SSD has been fully mirrored onto a backup HDD (see "Extreme_SSD ->
+HDD mirror" below, whole-drive verified with zero gaps) and is now **ready
+to disconnect**.
 
 ## Drives
 
@@ -43,7 +43,7 @@ it's on its way out once the mirror is complete.
   if a command suddenly can't see `/media/ishan/Trans_2TB`, check `lsblk`
   and reconnect the cable rather than assuming something's broken.
 
-## Extreme_SSD -> HDD mirror (in progress)
+## Extreme_SSD -> HDD mirror (complete)
 
 Goal, in order: (1) make the HDD a full mirror of Extreme_SSD's contents,
 (2) disconnect Extreme_SSD and let it be repurposed as a personal drive,
@@ -93,15 +93,26 @@ Status as of last update:
   byte-identical. Only `Movies` and `TV_Series` had leftover empty old-name
   "husk" folders in main after content moved out from under them -- both
   cleaned up.
-- Extreme_SSD-only folders never previously on the HDD at all (small ones
-  copied: `courses`, `library-followups`, `parallels`, `postage`,
-  `projects`, `receipts`, `selling`; large ones still queued:
-  `family_media` ~91GB, `parallels_vm` ~87GB, `wedding_nov_2024` ~35GB;
-  `Other_Videos` ~6GB queued alongside them).
-- Progress checkpointed to `/media/ishan/Trans_2TB/.reconcile-progress.log`
-  on the HDD itself (survives a session/agent restart -- read it directly
-  rather than trusting a resumed process's self-report, which has been
-  wrong more than once during this work).
+- Extreme_SSD-only folders never previously on the HDD at all -- all
+  copied and verified: `courses`, `library-followups`, `parallels`,
+  `postage`, `projects`, `receipts`, `selling`, `family_media`,
+  `parallels_vm`, `wedding_nov_2024`, `Other_Videos`.
+- Progress was checkpointed to
+  `/media/ishan/Trans_2TB/.reconcile-progress.log` on the HDD itself during
+  the work (survives a session/agent restart). That log is now superseded
+  by a final whole-drive verification (below) -- keeping it around as a
+  historical record of how the mirror was built, not as the source of
+  truth for completeness.
+
+**Mirror confirmed complete (final whole-drive check):** a full recursive
+`find`+`diff` of every file on Extreme_SSD against every file on the HDD
+(excluding `to-validate/`, hidden files, and known junk -- `$RECYCLE.BIN`,
+`FOUND.00N` chkdsk-recovered fragments, neither of which are real content)
+came back with **zero missing files, zero real extras**. A handful of
+folders differed only in capitalisation (e.g. `For a Few Dollars More` vs
+`For A Few Dollars More`) with identical content inside -- renamed on the
+HDD to match Extreme_SSD exactly. **Extreme_SSD is now safe to
+disconnect.**
 
 ## Plex -- removed
 
@@ -214,13 +225,9 @@ Applies to `Movies`, `TV_Series`, and `Other_Videos` on both drives:
 - [x] Add `roshani_backups` as a second Immich External Library
 - [x] Add the `Other_Videos` (Sports/TV Specials) library in the Jellyfin web UI
 - [x] Attach redundancy HDD (`Trans_2TB`)
-- [ ] Finish HDD <-> Extreme_SSD mirror (Movies done; TV_Series in
-      progress; small Extreme_SSD-only folders copied, large ones queued:
-      `family_media`, `parallels_vm`, `wedding_nov_2024`, `Other_Videos`)
-- [ ] Disconnect Extreme_SSD once the mirror is confirmed complete --
-      nothing left depends on it being connected, but it still holds the
-      only copy of `work`/`projects`/`wedding_nov_2024`/etc. until the
-      mirror finishes, so don't disconnect early
+- [x] Finish HDD <-> Extreme_SSD mirror -- whole-drive verified, zero
+      missing files
+- [ ] Disconnect Extreme_SSD (ready -- mirror confirmed complete)
 - [ ] After Extreme_SSD is disconnected: sync the HDD against the **Lexar**
       (not Extreme_SSD) to catch up on anything Jellyfin/Immich have added
       since the original Lexar migration -- Extreme_SSD's snapshot will be
