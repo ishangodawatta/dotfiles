@@ -115,6 +115,30 @@ folders differed only in capitalisation (e.g. `For a Few Dollars More` vs
 HDD to match Extreme_SSD exactly. **Extreme_SSD is now safe to
 disconnect.**
 
+## HDD <-> Lexar sync (ongoing)
+
+With Extreme_SSD gone, the HDD is the only backup, and the Lexar keeps
+moving as Jellyfin/Immich are used -- so it needs periodic re-syncing to
+avoid drifting stale, unlike the one-off Extreme_SSD mirror above.
+
+- [`sync-hdd-from-lexar.sh`](sync-hdd-from-lexar.sh): the actual sync
+  (`Movies`, `TV_Series`, `Other_Videos`, `family_media/immich_library`,
+  additive only -- no `--delete`, so it never removes anything from the
+  HDD even if Lexar's content is later removed). Exits cleanly if either
+  drive isn't currently connected, since both are removable.
+- [`setup-hdd-lexar-sync.sh`](setup-hdd-lexar-sync.sh): installs the above
+  as a systemd timer (`hdd-lexar-sync.timer`, daily, `Persistent=true` so
+  a missed run catches up after the laptop's been off/asleep at the
+  scheduled time, rather than silently skipping like plain cron would).
+  Idempotent, portable to another Debian device (derives the invoking
+  user and script path at run time rather than hardcoding them) -- run as
+  `sudo ./setup-hdd-lexar-sync.sh`.
+- Manual trigger: `sudo systemctl start hdd-lexar-sync.service`. Logs:
+  `journalctl -u hdd-lexar-sync.service`.
+- `ishan_backups`/`roshani_backups` are deliberately not in the sync list
+  -- they're static external libraries, not actively growing, and were
+  already confirmed identical across all three drives.
+
 ## Plex -- removed
 
 Was a native systemd service (`plexmediaserver.service`), installed via apt
@@ -242,7 +266,9 @@ Applies to `Movies`, `TV_Series`, and `Other_Videos` on both drives:
       disconnect time)
 - [x] Set up the HDD as a Samba network share (`[hdd]` ->
       `/mnt/trans_2tb`), same pattern as Lexar's `[lexar]` share
-- [ ] Periodically re-sync the HDD against the Lexar going forward, now
-      that Extreme_SSD is gone and the HDD is the only backup -- no
-      automation set up for this yet, it's a manual `rsync` per the
-      commands used in this file's git history
+- [x] Automate the HDD <-> Lexar re-sync -- `hdd-lexar-sync.timer`
+      (systemd, daily, `Persistent=true` so a missed run catches up after
+      the laptop's been off), installed via
+      [`setup-hdd-lexar-sync.sh`](setup-hdd-lexar-sync.sh). Verified
+      working with a manual trigger (`status=0/SUCCESS`, logs via
+      `journalctl -u hdd-lexar-sync.service`).
