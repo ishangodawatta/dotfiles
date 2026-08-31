@@ -112,6 +112,7 @@ INSTALL_GOOGLE_CHROME=false
 INSTALL_GOOGLE_DRIVE=false
 INSTALL_TRANSMISSION=false
 INSTALL_TAILSCALE=false
+INSTALL_SURFSHARK=false
 INSTALL_JELLYFIN=false
 INSTALL_OBSIDIAN=false
 INSTALL_WHATSAPP=false
@@ -335,6 +336,15 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     fi
   else
     echo "✅ Tailscale already installed"
+  fi
+
+  # Check Surfshark
+  if ! ls /Applications/ 2>/dev/null | grep -qi "surfshark"; then
+    if prompt_yes_no "🔒 Install Surfshark (commercial VPN)?"; then
+      INSTALL_SURFSHARK=true
+    fi
+  else
+    echo "✅ Surfshark already installed"
   fi
 
   # Check Jellyfin Media Player
@@ -1096,6 +1106,13 @@ if [[ "$INSTALL_TAILSCALE" == true ]]; then
   # Cask was renamed upstream: the old "tailscale" token now redirects here.
   brew install --cask tailscale-app
   echo "✅ Tailscale installed (log in via the menu bar to join the tailnet)"
+fi
+
+# Surfshark
+if [[ "$INSTALL_SURFSHARK" == true ]]; then
+  echo "🔒 Installing Surfshark (commercial VPN)..."
+  brew install --cask surfshark
+  echo "✅ Surfshark installed (sign in via the app to connect)"
 fi
 
 # Jellyfin Media Player
