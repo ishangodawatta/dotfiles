@@ -108,6 +108,7 @@ INSTALL_LUNAR=false
 INSTALL_RAYCAST=false
 INSTALL_GHOSTTY=false
 INSTALL_AEROSPACE=false
+INSTALL_CUA_DRIVER=false
 INSTALL_GOOGLE_CHROME=false
 INSTALL_GOOGLE_DRIVE=false
 INSTALL_TRANSMISSION=false
@@ -300,6 +301,15 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     fi
   else
     echo "✅ AeroSpace already installed"
+  fi
+
+  # Check Cua Driver
+  if [[ ! -d /Applications/CuaDriver.app ]]; then
+    if prompt_yes_no "🖱️  Install Cua Driver (background GUI automation)?"; then
+      INSTALL_CUA_DRIVER=true
+    fi
+  else
+    echo "✅ Cua Driver already installed"
   fi
 
   # Check Google Chrome
@@ -1078,6 +1088,45 @@ if [[ "$INSTALL_AEROSPACE" == true ]]; then
   brew install --cask nikitabobko/tap/aerospace
   echo "✅ AeroSpace installed"
 fi
+
+# Cua Driver
+if [[ "$INSTALL_CUA_DRIVER" == true ]]; then
+  echo "🖱️  Installing Cua Driver..."
+  # Not in homebrew-core, so the cask lives in this repo and is served through a
+  # local tap; brew still owns the upgrade and uninstall paths. Bump the version
+  # and sha256 in casks/cua-driver.rb to upgrade, then rerun this block. Do not
+  # use `cua-driver update --apply` — it runs the vendor installer and would
+  # leave the Caskroom stale.
+  CUA_TAP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/casks"
+  brew tap-new ishan/local --no-git >/dev/null 2>&1 || true
+  mkdir -p "$(brew --repository ishan/local)/Casks"
+  cp "$CUA_TAP_DIR/cua-driver.rb" "$(brew --repository ishan/local)/Casks/"
+  brew install --cask ishan/local/cua-driver
+  # Product telemetry is on by default and posts to PostHog; turn it off first.
+  cua-driver telemetry disable
+
+  # The daemon must run under the CuaDriver.app bundle identity or every call
+  # reports permissions as "unknown". macOS has no `cua-driver autostart`
+  # (Windows-only), so register a LaunchAgent by hand.
+  CUA_AGENT="com.trycua.cua-driver.plist"
+  mkdir -p "$HOME/Library/LaunchAgents"
+  cp "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/launchagents/$CUA_AGENT" \
+     "$HOME/Library/LaunchAgents/$CUA_AGENT"
+  launchctl unload "$HOME/Library/LaunchAgents/$CUA_AGENT" 2>/dev/null || true
+  launchctl load "$HOME/Library/LaunchAgents/$CUA_AGENT"
+
+  # Register as an MCP server at user scope. Going through MCP rather than
+  # `cua-driver call` matters: a held MCP session costs ~0.5s per action against
+  # ~3.9s for a fresh CLI process, which is the difference between usable and not.
+  if command -v claude >/dev/null 2>&1; then
+    claude mcp add --scope user --transport stdio cua-driver \
+      -- "$(command -v cua-driver)" mcp 2>/dev/null || true
+  fi
+
+  echo "✅ Cua Driver installed, daemon registered, MCP server added"
+  echo "   Run 'cua-driver permissions grant' to authorise Accessibility and Screen Recording"
+fi
+
 
 # Google Chrome
 if [[ "$INSTALL_GOOGLE_CHROME" == true ]]; then

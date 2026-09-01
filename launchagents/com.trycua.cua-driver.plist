@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.trycua.cua-driver</string>
+  <!-- Launch through `open -a` rather than the binary directly: macOS attributes
+       Accessibility and Screen Recording to the CuaDriver.app bundle identity,
+       and a raw exec would lose that attribution. -g keeps it in the background. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/open</string>
+    <string>-n</string>
+    <string>-g</string>
+    <string>-a</string>
+    <string>CuaDriver</string>
+    <string>--args</string>
+    <string>serve</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <!-- No KeepAlive: `open` exits as soon as the app is launched, so KeepAlive
+       would relaunch it in a loop. -->
+</dict>
+</plist>
