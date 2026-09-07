@@ -1,0 +1,9 @@
+{
+    "autodeskProduct": "Fusion",
+    "type": "addin",
+    "author": "",
+    "description": { "": "Re-run a Fusion build script when its file changes" },
+    "supportedOS": "macos",
+    "runOnStartup": true,
+    "editEnabled": true
+}

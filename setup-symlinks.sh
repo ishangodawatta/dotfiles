@@ -149,6 +149,33 @@ link_agent_config() {
   link_dir "$HOME/src/obsidian/projects/agents/skills" "$HOME/.agents/skills"
 }
 
+link_fusion_addins() {
+  # Autodesk Fusion ships no headless mode, so a build script can only run
+  # inside the running application. FusionScriptWatch re-runs a registered
+  # script whenever its file changes, which removes the manual click from the
+  # edit-rebuild loop. Fusion only reads this folder at launch, and only
+  # enumerates add-ins whose directory name matches the .py inside, so the
+  # link has to be the directory rather than the file.
+  local addins="$HOME/Library/Application Support/Autodesk/Autodesk Fusion 360/API/AddIns"
+  if [[ ! -d "$(dirname "$addins")" ]]; then
+    echo "  skip Fusion add-ins (Fusion not installed)"
+    return
+  fi
+  mkdir -p "$addins"
+  link_dir "$SCRIPT_DIR/fusion/FusionScriptWatch" "$addins/FusionScriptWatch"
+  echo "  enable it once in Fusion: Utilities > Add-Ins > Scripts and Add-Ins"
+
+  # Build scripts themselves are registered by the repository that owns them,
+  # the same way the vault owns its own agent config. It knows its layout;
+  # this script only knows where to find it.
+  local cad_repo="$HOME/src/3d-printing-lab/tools/register-fusion-scripts.sh"
+  if [[ -x "$cad_repo" ]]; then
+    "$cad_repo"
+  else
+    echo "  skip CAD script registration (3d-printing-lab not cloned)"
+  fi
+}
+
 # ---------------------------------------------------------------------------
 # Standalone mode: only runs when executed directly, not when sourced.
 # ---------------------------------------------------------------------------
@@ -179,6 +206,7 @@ _symlinks_standalone_main() {
     mkdir -p "$HOME/.config/karabiner"
     link_file "$SCRIPT_DIR/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json"
     remove_legacy_raycast_scripts_link
+    link_fusion_addins
   fi
   if [[ -d "$HOME/src/obsidian/projects/agents" ]]; then
     echo "Linking agent config from the vault"
