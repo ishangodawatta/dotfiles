@@ -135,10 +135,6 @@ link_agent_config() {
     fi
     mkdir -p "$claude_project_dir"
     link_dir "$project_path/memory" "$claude_project_dir/memory"
-    # Optional project-scoped instructions
-    if [[ -f "$project_path/AGENTS.md" ]]; then
-      link_file "$project_path/AGENTS.md" "$claude_project_dir/CLAUDE.md"
-    fi
   done
   
   # OpenAI Codex config, shared helpers, and cross-agent skills.

@@ -53,17 +53,17 @@ agents/
 │   ├── clean-worktree/
 │   └── ... (one dir per skill, each with SKILL.md)
 └── <project>/            ← per-project state for Claude Code
-    ├── memory/           ← memory dir (linked to ~/.claude/projects/<key>/memory/)
-    └── AGENTS.md         ← optional: project-scoped instructions (linked to ~/.claude/projects/<key>/CLAUDE.md)
+    └── memory/           ← memory dir (linked to ~/.claude/projects/<key>/memory/)
 ```
 
 ### How the symlinks are wired
 
-The setup scripts handle three layers of linking:
+The setup scripts handle two layers of linking:
 
 1. **Global config.** Claude configuration is linked into `~/.claude/`, Codex configuration into `~/.codex/`, shared helper scripts into `~/.agents/bin`, and the shared skill catalogue into both `~/.claude/skills` and the cross-agent `~/.agents/skills` location.
 2. **Per-project memory.** A loop walks every immediate subdirectory of `agents/` and, for any subdir that contains a `memory/` child, creates a symlink to it under `~/.claude/projects/<key>/memory`. The `<key>` defaults to `-Users-<user>-src-<project>` (matching a git repo at `~/src/<project>/`), but if the vault subdir contains a `.project-root` file, its content is read as the actual project root and the key is derived from that — used for non-git projects like Drive folders. The path may be written `~`-relative or with `$HOME`; both are expanded before the key is derived, and a plain absolute path still works.
-3. **Per-project instructions.** The same loop links `agents/<project>/AGENTS.md` → `~/.claude/projects/-Users-<user>-src-<project>/CLAUDE.md` if the file exists. Optional per-project.
+
+Per-project instructions are not vaulted. They live as a committed `AGENTS.md` at the repo root, alongside the code they describe, for every agent to read.
 
 The loop skips `skills/` and dotdirs, and skips `src/` unless it carries a `.project-root` (otherwise the convention would resolve it to `~/src/src`). Adding a new vaulted project = create `agents/<newproject>/memory/` and re-run setup. No script edits required.
 
@@ -101,10 +101,10 @@ The skill handles six cases automatically: already-vaulted no-op, fresh init, ad
 
 ### Per-project state: Claude vs Codex
 
-- **Claude Code:** lives in the vault as `agents/<project>/memory/` and (optionally) `agents/<project>/AGENTS.md`. Wired by symlink.
-- **Codex CLI:** does NOT live in the vault. Codex per-project state lives inside the repo itself as `.codex/config.toml` and `AGENTS.md` at the repo root, walked by Codex from repo root → cwd. The vault only hosts Codex's *global* config (`AGENTS.md`, `codex-config.toml`).
+- **Claude Code:** memory lives in the vault as `agents/<project>/memory/`, wired by symlink. Instructions come from the repo's own `AGENTS.md`.
+- **Codex CLI:** nothing per-project lives in the vault. Codex per-project state lives inside the repo itself as `.codex/config.toml` and `AGENTS.md` at the repo root, walked by Codex from repo root → cwd. The vault only hosts Codex's *global* config (`AGENTS.md`, `codex-config.toml`).
 
-This asymmetry exists because Codex auto-writes per-project trust entries into its global config and walks the repo for instructions, while Claude maintains a separate per-project memory directory. Both designs are accommodated.
+This asymmetry exists because Codex auto-writes per-project trust entries into its global config, while Claude maintains a separate per-project memory directory that is worth syncing across machines. Per-repo instructions are the one thing both tools read from the same place: the repo root.
 
 ### Failure modes
 
