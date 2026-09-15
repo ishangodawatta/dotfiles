@@ -127,6 +127,7 @@ INSTALL_RSYNC=false
 INSTALL_GIT=false
 CONFIGURE_GLOBAL_GIT_EXCLUDES=false
 INSTALL_UV=false
+INSTALL_EUPORIE=false
 INSTALL_GIT_FILTER_REPO=false
 INSTALL_GIT_LFS=false
 INSTALL_TMUX=false
@@ -306,6 +307,17 @@ if ! command -v uv &>/dev/null; then
   fi
 else
   echo "✅ uv already installed"
+fi
+
+# Check euporie (TUI Jupyter notebook editor, installed as a uv tool)
+if ! command -v euporie &>/dev/null; then
+  if command -v uv &>/dev/null || [[ "$INSTALL_UV" == true ]]; then
+    if prompt_yes_no "📓 Install euporie (terminal Jupyter notebook editor)?"; then
+      INSTALL_EUPORIE=true
+    fi
+  fi
+else
+  echo "✅ euporie already installed"
 fi
 
 # Check llama.cpp
@@ -955,6 +967,15 @@ if [[ "$INSTALL_UV" == true ]]; then
     echo 'export PATH="$HOME/.cargo/bin:$PATH"' >>~/.zshrc
   fi
   echo "✅ uv installed"
+fi
+
+# Install euporie (bundles an ipykernel plus pandas and matplotlib for standalone use)
+if [[ "$INSTALL_EUPORIE" == true ]]; then
+  echo "📓 Installing euporie..."
+  # Fresh uv installs land in ~/.local/bin; pick that up before calling uv
+  [ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
+  uv tool install euporie --with ipykernel --with matplotlib --with pandas
+  echo "✅ euporie installed"
 fi
 
 # Install pyenv dependencies and pyenv
@@ -1631,6 +1652,7 @@ command -v curl >/dev/null && echo "✅ curl: $(curl --version | head -n1)"
 command -v rsync >/dev/null && echo "✅ rsync: $(rsync --version | head -n1)"
 command -v git >/dev/null && echo "✅ Git: $(git --version)"
 command -v uv >/dev/null && echo "✅ uv: $(uv --version)"
+command -v euporie >/dev/null && echo "✅ euporie: $(euporie --version)"
 command -v git-filter-repo >/dev/null && echo "✅ git-filter-repo: $(git-filter-repo --version 2>&1 | head -n1)"
 command -v git-lfs >/dev/null && echo "✅ git-lfs: $(git-lfs --version | head -n1)"
 command -v gh >/dev/null && echo "✅ gh: $(gh --version 2>&1 | head -n1)"

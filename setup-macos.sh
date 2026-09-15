@@ -91,6 +91,7 @@ INSTALL_XCODE=false
 INSTALL_HOMEBREW=false
 CONFIGURE_GLOBAL_GIT_EXCLUDES=false
 INSTALL_UV=false
+INSTALL_EUPORIE=false
 INSTALL_GIT_FILTER_REPO=false
 INSTALL_GIT_LFS=false
 INSTALL_TMUX=false
@@ -687,6 +688,17 @@ else
   echo "✅ uv already installed"
 fi
 
+# Check euporie (TUI Jupyter notebook editor, installed as a uv tool)
+if ! command -v euporie &>/dev/null; then
+  if command -v uv &>/dev/null || [[ "$INSTALL_UV" == true ]]; then
+    if prompt_yes_no "📓 Install euporie (terminal Jupyter notebook editor)?"; then
+      INSTALL_EUPORIE=true
+    fi
+  fi
+else
+  echo "✅ euporie already installed"
+fi
+
 # Check NVM (not dependent on Homebrew)
 # NVM is a shell function, so we check for the directory and script file
 if [[ ! -d "$HOME/.nvm" ]] || [[ ! -s "$HOME/.nvm/nvm.sh" ]]; then
@@ -884,6 +896,15 @@ if [[ "$INSTALL_UV" == true ]]; then
   export PATH="$HOME/.cargo/bin:$PATH"
   echo 'export PATH="$HOME/.cargo/bin:$PATH"' >>~/.zshrc
   echo "✅ uv installed"
+fi
+
+# Install euporie (bundles an ipykernel plus pandas and matplotlib for standalone use)
+if [[ "$INSTALL_EUPORIE" == true ]]; then
+  echo "📓 Installing euporie..."
+  # Fresh uv installs land in ~/.local/bin; pick that up before calling uv
+  [ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
+  uv tool install euporie --with ipykernel --with matplotlib --with pandas
+  echo "✅ euporie installed"
 fi
 
 # Install git-filter-repo
@@ -1562,6 +1583,7 @@ echo "🔍 Current installation status:"
 command -v brew >/dev/null && echo "✅ Homebrew: $(brew --version | head -n1)"
 command -v git >/dev/null && echo "✅ Git: $(git --version)"
 command -v uv >/dev/null && echo "✅ uv: $(uv --version)"
+command -v euporie >/dev/null && echo "✅ euporie: $(euporie --version)"
 command -v git-filter-repo >/dev/null && echo "✅ git-filter-repo: $(git-filter-repo --version 2>&1 | head -n1)"
 command -v git-lfs >/dev/null && echo "✅ git-lfs: $(git-lfs --version | head -n1)"
 command -v tmux >/dev/null && echo "✅ tmux: $(tmux -V)"
