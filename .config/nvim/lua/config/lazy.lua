@@ -43,9 +43,10 @@ require("lazy").setup({
   },
   install = { colorscheme = { "gruvbox", "habamax" } },
   checker = {
-    enabled = true, -- check for plugin updates periodically
-    notify = false, -- notify on update
-  }, -- automatically check for plugin updates
+    -- Do not poll for updates in the background. The lockfile is the source of
+    -- truth across machines; update deliberately with :Lazy update and commit it.
+    enabled = false,
+  },
   performance = {
     rtp = {
       -- disable some rtp plugins
