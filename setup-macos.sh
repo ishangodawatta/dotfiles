@@ -146,6 +146,7 @@ INSTALL_RCLONE=false
 INSTALL_SHOTTR=false
 INSTALL_CYBERDUCK=false
 INSTALL_TODOIST=false
+INSTALL_LIBREOFFICE=false
 INSTALL_WINDOWS_APP=false
 INSTALL_MYSQL=false
 INSTALL_DOCKER=false
@@ -636,6 +637,15 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     fi
   else
     echo "Todoist already installed"
+  fi
+
+  # Check LibreOffice
+  if ! ls /Applications/ 2>/dev/null | grep -qi "libreoffice"; then
+    if prompt_yes_no "Install LibreOffice (office suite)?"; then
+      INSTALL_LIBREOFFICE=true
+    fi
+  else
+    echo "LibreOffice already installed"
   fi
 
   # Check Windows App
@@ -1448,6 +1458,13 @@ if [[ "$INSTALL_TODOIST" == true ]]; then
   echo "Todoist installed"
 fi
 
+# LibreOffice
+if [[ "$INSTALL_LIBREOFFICE" == true ]]; then
+  echo "Installing LibreOffice..."
+  brew install --cask libreoffice
+  echo "LibreOffice installed"
+fi
+
 # Windows App
 if [[ "$INSTALL_WINDOWS_APP" == true ]]; then
   echo "🪟 Installing Windows App..."
@@ -1658,6 +1675,7 @@ command -v rclone >/dev/null && echo "rclone: $(rclone --version | head -n1)"
 ls /Applications/ 2>/dev/null | grep -qi "shottr" && echo "✅ Shottr: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "cyberduck" && echo "Cyberduck: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "todoist" && echo "Todoist: Installed"
+ls /Applications/ 2>/dev/null | grep -qi "libreoffice" && echo "LibreOffice: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "windows app" && echo "✅ Windows App: Installed"
 command -v mysql >/dev/null && echo "✅ MySQL: $(mysql --version)"
 ls /Applications/ 2>/dev/null | grep -qi "mysqlworkbench" && echo "✅ MySQL Workbench: Installed"
