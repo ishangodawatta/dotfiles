@@ -145,6 +145,7 @@ INSTALL_GH=false
 INSTALL_RCLONE=false
 INSTALL_SHOTTR=false
 INSTALL_CYBERDUCK=false
+INSTALL_TODOIST=false
 INSTALL_WINDOWS_APP=false
 INSTALL_MYSQL=false
 INSTALL_DOCKER=false
@@ -626,6 +627,15 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
     fi
   else
     echo "Cyberduck already installed"
+  fi
+
+  # Check Todoist
+  if ! ls /Applications/ 2>/dev/null | grep -qi "todoist"; then
+    if prompt_yes_no "Install Todoist (to-do list)?"; then
+      INSTALL_TODOIST=true
+    fi
+  else
+    echo "Todoist already installed"
   fi
 
   # Check Windows App
@@ -1431,6 +1441,13 @@ if [[ "$INSTALL_CYBERDUCK" == true ]]; then
   echo "Cyberduck installed"
 fi
 
+# Todoist
+if [[ "$INSTALL_TODOIST" == true ]]; then
+  echo "Installing Todoist..."
+  brew install --cask todoist-app
+  echo "Todoist installed"
+fi
+
 # Windows App
 if [[ "$INSTALL_WINDOWS_APP" == true ]]; then
   echo "🪟 Installing Windows App..."
@@ -1640,6 +1657,7 @@ command -v gh >/dev/null && echo "gh: $(gh --version 2>&1 | head -n1)"
 command -v rclone >/dev/null && echo "rclone: $(rclone --version | head -n1)"
 ls /Applications/ 2>/dev/null | grep -qi "shottr" && echo "✅ Shottr: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "cyberduck" && echo "Cyberduck: Installed"
+ls /Applications/ 2>/dev/null | grep -qi "todoist" && echo "Todoist: Installed"
 ls /Applications/ 2>/dev/null | grep -qi "windows app" && echo "✅ Windows App: Installed"
 command -v mysql >/dev/null && echo "✅ MySQL: $(mysql --version)"
 ls /Applications/ 2>/dev/null | grep -qi "mysqlworkbench" && echo "✅ MySQL Workbench: Installed"
