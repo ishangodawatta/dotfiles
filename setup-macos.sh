@@ -43,7 +43,7 @@ git_global_excludes_needs_setup() {
   fi
 
   local entry
-  for entry in "CLAUDE.md" ".DS_Store" ".env"; do
+  for entry in "CLAUDE.md" ".DS_Store" ".env" ".zvec-grep/"; do
     if ! grep -Fxq "$entry" "$excludes_file"; then
       return 0
     fi
@@ -74,8 +74,8 @@ configure_git_global_excludes() {
   touch "$excludes_file"
 
   local entry
-  for entry in "CLAUDE.md" ".DS_Store" ".env"; do
-    grep -Fxq "$entry" "$excludes_file" || printf '%s\n' "$entry" >>"$excludes_file"
+  for entry in "CLAUDE.md" ".DS_Store" ".env" ".zvec-grep/"; do
+    grep -Fxq "$entry" "$excludes_file" || printf '\n%s\n' "$entry" >>"$excludes_file"
   done
 
   git config --global core.excludesfile "$excludes_file"
@@ -102,6 +102,8 @@ INSTALL_VSCODE=false
 INSTALL_VSCODE_CLI=false
 INSTALL_NVM=false
 INSTALL_NODE=false
+INSTALL_ZVEC_GREP=false
+CONFIGURE_ZVEC_GREP=false
 INSTALL_CLAUDE_CODE=false
 INSTALL_PYENV=false
 INSTALL_PYTHON=false
@@ -180,11 +182,11 @@ if [[ "$INSTALL_HOMEBREW" == true ]] || command -v brew &>/dev/null; then
   if command -v git &>/dev/null; then
     echo "✅ Git already installed"
     if git_global_excludes_needs_setup; then
-      if prompt_yes_no "Configure Git global excludes for CLAUDE.md, .DS_Store, and .env?"; then
+      if prompt_yes_no "Configure Git global excludes for CLAUDE.md, .DS_Store, .env, and .zvec-grep/?"; then
         CONFIGURE_GLOBAL_GIT_EXCLUDES=true
       fi
     else
-      echo "✅ Git global excludes already cover CLAUDE.md, .DS_Store, and .env"
+      echo "Git global excludes already cover CLAUDE.md, .DS_Store, .env, and .zvec-grep/"
     fi
   fi
 
@@ -754,6 +756,21 @@ else
   fi
 fi
 
+# Check zvec-grep
+if ! command -v zg &>/dev/null; then
+  if prompt_yes_no "Install zvec-grep (local search for agents; requires Node.js 22+)?"; then
+    INSTALL_ZVEC_GREP=true
+  fi
+else
+  echo "zvec-grep already installed"
+fi
+
+if [[ "$INSTALL_ZVEC_GREP" == true ]] || command -v zg &>/dev/null; then
+  if prompt_yes_no "Configure zvec-grep for Codex and Claude Code?"; then
+    CONFIGURE_ZVEC_GREP=true
+  fi
+fi
+
 # Check Claude Code CLI
 if ! command -v claude &>/dev/null; then
   if prompt_yes_no "🤖 Install Claude Code CLI (Anthropic)?"; then
@@ -1017,6 +1034,19 @@ if [[ "$INSTALL_NODE" == true ]]; then
   nvm alias default node
   echo "✅ Node.js installed: $(node --version)"
   echo "✅ npm installed: $(npm --version)"
+fi
+
+# Install zvec-grep
+if [[ "$INSTALL_ZVEC_GREP" == true ]]; then
+  if ! command -v npm &>/dev/null || ! command -v node &>/dev/null ||
+    ! node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)'; then
+    echo "zvec-grep requires Node.js 22 or newer and npm. Install Node.js LTS and rerun setup."
+    exit 1
+  fi
+
+  echo "Installing zvec-grep..."
+  npm install -g @zvec/zvec-grep
+  echo "zvec-grep installed"
 fi
 
 # Install Claude Code CLI
@@ -1610,6 +1640,14 @@ if [[ "$LINK_DOTFILES" == true ]]; then
   echo "Dotfiles linked"
 fi
 
+# Configure integrations after linking so they update the shared agent configuration.
+if [[ "$CONFIGURE_ZVEC_GREP" == true ]]; then
+  echo "Configuring zvec-grep for Codex and Claude Code..."
+  zg install --target codex --yes
+  zg install --target claude --yes
+  echo "zvec-grep agent integrations configured"
+fi
+
 # Verify installations
 echo ""
 echo "🔍 Current installation status:"
@@ -1637,6 +1675,7 @@ export NVM_DIR="$HOME/.nvm"
 command -v nvm >/dev/null && echo "✅ NVM: $(nvm --version)"
 command -v node >/dev/null && echo "✅ Node.js: $(node --version)"
 command -v npm >/dev/null && echo "✅ npm: $(npm --version)"
+command -v zg >/dev/null && echo "zvec-grep: $(zg version)"
 command -v claude >/dev/null && echo "✅ Claude Code CLI: $(claude --version 2>/dev/null | head -n1)"
 
 ls /Applications/ 2>/dev/null | grep -qi "brave" && echo "✅ Brave Browser: Installed"

@@ -24,6 +24,8 @@ Copy `.config` files to `~`
 
 Both Claude Code and Codex CLI are configured via an Obsidian vault at `~/src/obsidian/projects/agents/`. The setup scripts symlink the vault contents into `~/.claude/`, `~/.codex/`, and `~/.agents/` so all AI config (instructions, settings, skills, per-project memory) lives in one private location instead of being committed to this repo.
 
+The macOS and Debian setup scripts also offer to install zvec-grep (`zg`) globally via npm, requiring Node.js 22 or newer, and configure its Codex and Claude Code integrations after the agent configuration is linked. Their Git global excludes setup includes `.zvec-grep/` to keep local search indexes out of commits.
+
 ### Bootstrap on a new machine
 
 ```
