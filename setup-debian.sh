@@ -140,6 +140,7 @@ INSTALL_NODE=false
 INSTALL_ZVEC_GREP=false
 CONFIGURE_ZVEC_GREP=false
 INSTALL_CLAUDE_CODE=false
+REGISTER_TODOIST_MCP=false
 INSTALL_PYENV=false
 INSTALL_PYTHON=false
 INSTALL_GOOGLE_CHROME=false
@@ -387,6 +388,12 @@ if ! command -v claude &>/dev/null; then
   fi
 else
   echo "✅ Claude Code CLI already installed"
+fi
+
+if [[ "$INSTALL_CLAUDE_CODE" == true ]] || command -v claude &>/dev/null; then
+  if prompt_yes_no "Register the Todoist MCP server with Claude Code?"; then
+    REGISTER_TODOIST_MCP=true
+  fi
 fi
 
 # Check OpenAI Codex CLI
@@ -1680,6 +1687,21 @@ if [[ "$CONFIGURE_ZVEC_GREP" == true ]]; then
   zg install --target codex --yes
   zg install --target claude --yes
   echo "zvec-grep agent integrations configured"
+fi
+
+# Todoist's hosted MCP server. The registration lives in ~/.claude.json, which
+# is per machine and never synced, and the OAuth grant is local too, so each
+# machine needs this step plus a one-off sign-in via /mcp inside Claude Code.
+if [[ "$REGISTER_TODOIST_MCP" == true ]]; then
+  if ! command -v claude &>/dev/null; then
+    echo "Claude Code CLI not on PATH; rerun setup to register the Todoist MCP server"
+  elif claude mcp get todoist &>/dev/null; then
+    echo "Todoist MCP server already registered with Claude Code"
+  else
+    echo "Registering Todoist MCP server with Claude Code..."
+    claude mcp add --scope user --transport http todoist https://ai.todoist.net/mcp
+    echo "Todoist MCP server registered. Run /mcp inside Claude Code to sign in."
+  fi
 fi
 
 # Verify installations

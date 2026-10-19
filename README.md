@@ -26,6 +26,8 @@ Both Claude Code and Codex CLI are configured via an Obsidian vault at `~/src/ob
 
 The macOS and Debian setup scripts also offer to install zvec-grep (`zg`) globally via npm, requiring Node.js 22 or newer, and configure its Codex and Claude Code integrations after the agent configuration is linked. Their Git global excludes setup includes `.zvec-grep/` to keep local search indexes out of commits.
 
+All three scripts can register Todoist's hosted MCP server (`https://ai.todoist.net/mcp`) with Claude Code at user scope: macOS and Debian prompt for it, Windows does it whenever the `claude` CLI is present. The registration lives in `~/.claude.json` and the OAuth grant is stored locally, neither of which syncs between machines, so after setup run `/mcp` inside Claude Code once per machine to sign in.
+
 ### Bootstrap on a new machine
 
 ```

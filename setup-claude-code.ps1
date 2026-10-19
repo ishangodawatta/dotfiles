@@ -141,5 +141,20 @@ if ((Get-Command "claude" -ErrorAction SilentlyContinue) -and (Test-Path $Plugin
     }
 }
 
+# Todoist's hosted MCP server. The registration lives in ~/.claude.json, which
+# is per machine and never synced, and the OAuth grant is local too, so each
+# machine needs this step plus a one-off sign-in via /mcp inside Claude Code.
+if (Get-Command "claude" -ErrorAction SilentlyContinue) {
+    Write-Host ""
+    claude mcp get todoist *> $null
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Todoist MCP server already registered with Claude Code"
+    } else {
+        Write-Host "Registering Todoist MCP server with Claude Code..." -ForegroundColor Cyan
+        claude mcp add --scope user --transport http todoist https://ai.todoist.net/mcp
+        Write-Host "Run /mcp inside Claude Code to sign in to Todoist"
+    }
+}
+
 Write-Host ""
 Write-Host "Setup complete!" -ForegroundColor Green
