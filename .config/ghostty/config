@@ -4,7 +4,8 @@ font-size = 18
 macos-titlebar-style = tabs
 maximize = true
 macos-non-native-fullscreen = visible-menu
-window-save-state = always
+# Conversation recovery recreates the windows; avoid a second set of empty ones.
+window-save-state = never
 
 theme = Desert
 macos-option-as-alt = false

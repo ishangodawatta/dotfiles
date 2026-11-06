@@ -67,3 +67,14 @@ if [ -n "$_codex_arch" ]; then
   fi
 fi
 unset _codex_arch
+
+# Local recovery commands and a reminder after an unrecovered Ghostty restart.
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) export PATH="$HOME/.local/bin:$PATH" ;;
+esac
+alias ghostty-save='ghostty-resurrect backup'
+alias ghostty-restore='ghostty-resurrect restore --missing'
+if [[ "${TERM_PROGRAM:-}" == ghostty && -x "$HOME/.local/bin/ghostty-resurrect" ]]; then
+  "$HOME/.local/bin/ghostty-resurrect" status --brief
+fi

@@ -20,6 +20,54 @@ Copy `.config` files to `~`
 - Karabiner (to remap keys)
 - Rectangle - import via Rectangle > Settings > Import
 
+## Ghostty recovery on macOS
+
+Run `./setup-ghostty-recovery.sh` to install the bundled recovery command and a
+LaunchAgent that captures the layout and exact conversation IDs every 15 seconds
+and at login. The macOS setup script also runs this when Ghostty and Node.js are
+available. Setup is idempotent and requires Ghostty 1.4+ and Node.js 18+.
+
+In a new shell:
+
+```sh
+ghostty-save                      # immediate checkpoint before a planned shutdown
+ghostty-restore                   # reopen missing conversations after restarting
+ghostty-resurrect status          # check backup age and any errors
+```
+
+The restore alias expands to `ghostty-resurrect restore --missing`, which avoids
+duplicating conversations that are already running. A new Ghostty shell displays
+a reminder when recovery is pending. Recovery is started explicitly; automatic
+backups start at login. If macOS requests Automation access to Ghostty, allow it
+for this recovery workflow and check `ghostty-resurrect status` afterwards.
+
+The patched dependency is vendored in
+[`vendor/ghostty-resurrect`](vendor/ghostty-resurrect/README.md), including its MIT
+licence and tests, so another machine receives the tested implementation without
+depending on an uncommitted neighbouring checkout or the unfixed npm release.
+The shared symlink helper installs `~/.local/bin/ghostty-resurrect`. The launch
+template is [`launchagents/local.ghostty-resurrect.plist`](launchagents/local.ghostty-resurrect.plist).
+
+Only the current checkpoint and small current status files are maintained in
+`~/.config/ghostty-resurrect/`; these stay local and are not committed. Partial or
+uncertain captures preserve the previous checkpoint. A new boot or Ghostty
+instance cannot replace unrecovered conversations. Explicitly run `ghostty-save`
+to accept a deliberately fresh layout instead. Intentional pane closures settle
+for 60 seconds before automatic replacement.
+
+Ghostty's native window restoration is disabled to avoid duplicate empty windows.
+The recovery command restores conversations and directories, not running commands
+or process memory; local jobs stop at shutdown. Split geometry is approximate.
+A newly opened session can be newer than the last periodic capture, so take an
+explicit checkpoint before a planned shutdown. See the bundled README for the
+full behaviour and validation boundaries.
+
+To stop scheduling backups, run
+`launchctl bootout gui/$(id -u)/local.ghostty-resurrect` and remove
+`~/Library/LaunchAgents/local.ghostty-resurrect.plist`. Restore
+`window-save-state = always` in the Ghostty config if returning to native layout
+restoration. Existing local snapshots are left available.
+
 ## AI tooling (Claude Code, OpenAI Codex)
 
 Both Claude Code and Codex CLI are configured via an Obsidian vault at `~/src/obsidian/projects/agents/`. The setup scripts symlink the vault contents into `~/.claude/`, `~/.codex/`, and `~/.agents/` so all AI config (instructions, settings, skills, per-project memory) lives in one private location instead of being committed to this repo.

@@ -1,0 +1,48 @@
+{
+  "name": "ghostty-resurrect",
+  "version": "0.2.0-local.1",
+  "description": "Back up & restore Ghostty tabs, panes, and the Claude Code / Codex CLI sessions running inside them — the tmux-resurrect of Ghostty + AI coding agents.",
+  "bin": {
+    "ghostty-resurrect": "bin/ghostty-resurrect"
+  },
+  "scripts": {
+    "test": "node --test --test-reporter=tap",
+    "backup": "node bin/ghostty-resurrect backup",
+    "restore": "node bin/ghostty-resurrect restore"
+  },
+  "keywords": [
+    "ghostty",
+    "terminal",
+    "session",
+    "backup",
+    "restore",
+    "resurrect",
+    "claude-code",
+    "codex",
+    "applescript",
+    "macos"
+  ],
+  "author": "Reda (@redareda9)",
+  "license": "MIT",
+  "homepage": "https://github.com/redareda9/ghostty-resurrect",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/redareda9/ghostty-resurrect.git"
+  },
+  "bugs": {
+    "url": "https://github.com/redareda9/ghostty-resurrect/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin"
+  ],
+  "files": [
+    "bin/",
+    "lib/",
+    "skills/",
+    "README.md",
+    "LICENSE"
+  ]
+}

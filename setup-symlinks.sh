@@ -98,6 +98,11 @@ link_config_dirs() {
   fi
 }
 
+link_ghostty_recovery() {
+  case "$(uname -s)" in Darwin) ;; *) return ;; esac
+  link_file "$SCRIPT_DIR/vendor/ghostty-resurrect/bin/ghostty-resurrect" "$HOME/.local/bin/ghostty-resurrect"
+}
+
 link_agent_config() {
   # Claude Code config (all content lives in vault)
   mkdir -p "$HOME/.claude"
@@ -203,6 +208,7 @@ _symlinks_standalone_main() {
     link_file "$SCRIPT_DIR/.config/karabiner/karabiner.json" "$HOME/.config/karabiner/karabiner.json"
     remove_legacy_raycast_scripts_link
     link_fusion_addins
+    link_ghostty_recovery
   fi
   if [[ -d "$HOME/src/obsidian/projects/agents" ]]; then
     echo "Linking agent config from the vault"
