@@ -1,0 +1,347 @@
+#!/usr/bin/env node
+/**
+ * ghostty-resurrect — back up & restore Ghostty tabs, panes, and the
+ * Claude Code / Codex sessions running inside them.
+ *
+ * Captures the full Ghostty layout (windows -> tabs -> panes) and, for every
+ * pane running a Claude Code or Codex CLI session, records the resumable
+ * session id. `restore` reopens Ghostty with the same tabs/panes and
+ * auto-resumes each session via `claude --resume <id>` / `codex resume <id>`.
+ *
+ * Matches each foreground process to its open main session transcript.
+ * Ambiguous captures fail without overwriting the previous backup.
+ *
+ * Requirements: macOS, Ghostty >= 1.4.0 (AppleScript dictionary), Node >= 18 or Bun.
+ * License: MIT.
+ */
+"use strict";
+const { homedir } = require("os");
+const { join, basename } = require("path");
+const { spawnSync } = require("child_process");
+const { readdirSync, statSync, existsSync, openSync, closeSync } = require("fs");
+
+const HOME = homedir();
+const STORE = process.env.GHOSTTY_RESURRECT_DIR || join(HOME, ".config", "ghostty-resurrect");
+const US = ""; // field separator emitted by the capture AppleScript
+
+const { UUID, run, processes, inspectProcesses, sessionFromFile, resolvePane: resolveProcessPane } = require("../lib/sessions");
+const { prepareStore, cleanInterruptedWrites, snapshotPath, readJSON, atomicJSON, panes, validateSnapshot,
+  sameInstance, sessionIds, autoDecision } = require("../lib/storage");
+
+function osascript(script) {
+  return run("/usr/bin/osascript", ["-"], { input: script });
+}
+
+// ---------- layout capture ----------
+const CAPTURE = `set US to (ASCII character 31)
+set LF to (ASCII character 10)
+set out to ""
+if application "Ghostty" is not running then return out
+tell application "Ghostty"
+  repeat with w in windows
+    set out to out & "W" & LF
+    repeat with t in tabs of w
+      set sel to "0"
+      if selected of t then set sel to "1"
+      set out to out & "T" & US & sel & US & (name of t) & LF
+      repeat with trm in terminals of t
+        set out to out & "P" & US & (working directory of trm) & US & (name of trm) & US & (id of trm) & US & (pid of trm) & US & (tty of trm) & LF
+      end repeat
+    end repeat
+  end repeat
+end tell
+return out`;
+
+function parseLayout(raw) {
+  if (!raw.trim()) throw Object.assign(new Error("No Ghostty windows found"), { code: "NO_WINDOWS" });
+  const windows = [];
+  let curWin = null, curTab = null;
+  for (const line of raw.split("\n")) {
+    if (line === "W") { curWin = { tabs: [] }; windows.push(curWin); curTab = null; continue; }
+    const parts = line.split(US);
+    if (parts[0] === "T" && curWin) {
+      if (parts.length !== 3) throw new Error("Invalid Ghostty tab data");
+      curTab = { name: parts[2] || "", selected: parts[1] === "1", panes: [] };
+      curWin.tabs.push(curTab);
+    } else if (parts[0] === "P" && curTab) {
+      if (parts.length !== 6 || !parts[3] || !/^\d+$/.test(parts[4])) throw new Error("Invalid Ghostty pane data");
+      curTab.panes.push({ cwd: parts[1] || HOME, title: parts[2] || "", terminalId: parts[3], pid: Number(parts[4]), tty: parts[5] });
+    } else if (line) {
+      throw new Error("Invalid Ghostty layout data");
+    }
+  }
+  return windows;
+}
+
+function currentContext(procs = processes()) {
+  const instances = procs.filter((p) => basename(p.command) === "Ghostty");
+  if (instances.length > 1) throw new Error("Multiple Ghostty instances are running");
+  return {
+    bootId: run("/usr/sbin/sysctl", ["-n", "kern.bootsessionuuid"]).trim(),
+    ghosttyPid: instances[0]?.pid || null,
+    ghosttyStarted: instances.length ? run("/bin/ps", ["-p", String(instances[0].pid), "-o", "lstart="]).trim() : null,
+  };
+}
+
+function capture(name) {
+  const windows = parseLayout(osascript(CAPTURE));
+  const { procs, files } = inspectProcesses();
+  for (const window of windows) for (const tab of window.tabs) {
+    tab.panes = tab.panes.map((pane) => resolveProcessPane(pane, procs, files));
+  }
+  return validateSnapshot({ schemaVersion: 2, name, savedAt: new Date().toISOString(), context: currentContext(procs), windows });
+}
+
+// ---------- restore ----------
+function resumeCmd(p) {
+  if (p.tool === "shell") return null;
+  if (!UUID.test(p.sessionId || "")) throw new Error("A saved agent has no valid conversation ID; take a new backup");
+  const quote = (value) => `'${value.replace(/'/g, "'\\''")}'`;
+  const variable = p.tool === "codex" ? "CODEX_HOME" : "CLAUDE_CONFIG_DIR";
+  const prefix = p.sessionHome && p.sessionHome !== join(HOME, `.${p.tool}`) ? `${variable}=${quote(p.sessionHome)} ` : "";
+  if (p.tool === "claude") return `${prefix}claude --resume ${p.sessionId}`;
+  if (p.tool === "codex") return `${prefix}codex resume ${p.sessionId}`;
+  throw new Error(`Unsupported saved tool: ${p.tool}`);
+}
+function aesc(s) { return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"'); }
+function cfgLines(v, p) {
+  const cmd = resumeCmd(p);
+  let s = `set ${v} to new surface configuration\n`;
+  s += `set initial working directory of ${v} to "${aesc(p.cwd)}"\n`;
+  if (cmd) s += `set initial input of ${v} to "${aesc(cmd)}" & LF\n`;
+  return s;
+}
+
+function buildRestoreScript(b) {
+  let s = `set LF to (ASCII character 10)\ntell application "Ghostty"\n  activate\n`;
+  let v = 0;
+  for (const w of b.windows) {
+    if (!w.tabs.length) continue;
+    s += "set restoreSelectedTab to missing value\n";
+    for (let ti = 0; ti < w.tabs.length; ti++) {
+      const tab = w.tabs[ti];
+      if (!tab.panes.length) continue;
+      const c = `cfg${v++}`;
+      s += cfgLines(c, tab.panes[0]);
+      if (ti === 0) {
+        s += `set win to new window with configuration ${c}\n`;
+        s += `set tb to selected tab of win\n`;
+      } else {
+        s += `set tb to new tab in win with configuration ${c}\n`;
+      }
+      if (tab.selected) s += "set restoreSelectedTab to tb\n";
+      s += `set lastTerm to focused terminal of tb\n`;
+      for (let pi = 1; pi < tab.panes.length; pi++) {
+        const pc = `cfg${v++}`;
+        s += cfgLines(pc, tab.panes[pi]);
+        s += `set lastTerm to split lastTerm direction right with configuration ${pc}\n`;
+      }
+    }
+    s += "if restoreSelectedTab is not missing value then select tab restoreSelectedTab\n";
+  }
+  s += "end tell\n";
+  return s;
+}
+
+// ---------- io ----------
+function pathFor(name) { return snapshotPath(STORE, name); }
+function save(b) { prepareStore(STORE); atomicJSON(pathFor(b.name), validateSnapshot(b)); }
+function load(name) {
+  const snapshot = readJSON(pathFor(name));
+  if (!snapshot) throw new Error(`No backup named ${name}`);
+  return validateSnapshot(snapshot);
+}
+const statePath = join(STORE, ".autosave.json");
+const statusPath = join(STORE, ".status.json");
+
+function autoBackup() {
+  const previous = readJSON(pathFor("latest"));
+  if (previous) validateSnapshot(previous);
+  const state = readJSON(statePath, {});
+  let current;
+  try { current = capture("latest"); }
+  catch (error) {
+    atomicJSON(statusPath, { checkedAt: new Date().toISOString(), status: error.code === "NO_WINDOWS" ? "waiting" : "error", reason: error.message });
+    if (error.code !== "NO_WINDOWS") throw error;
+    return;
+  }
+  const decision = autoDecision(previous, current, state);
+  if (decision.save) save(current);
+  atomicJSON(statePath, decision.state);
+  atomicJSON(statusPath, { checkedAt: new Date().toISOString(), status: decision.save ? "current" : "protected", reason: decision.reason, recoveryPending: decision.recoveryPending || Boolean(decision.state.awaiting) });
+}
+
+function activeSessionIds(files) {
+  const ids = new Set();
+  for (const record of files.values()) for (const file of record.files) {
+    const match = basename(file).match(/(?:^|-)([0-9a-f-]{36})\.jsonl$/i);
+    if (match && UUID.test(match[1])) ids.add(match[1]);
+  }
+  return ids;
+}
+
+function restoreSelection(snapshot, activeIds, terminalIds, missingOnly) {
+  const duplicates = sessionIds(snapshot).filter((id) => activeIds.has(id));
+  if (duplicates.length && !missingOnly) {
+    throw new Error(`${duplicates.length} saved conversation(s) are already running; use restore --missing to reopen only missing panes`);
+  }
+  if (!missingOnly) return snapshot;
+  return { ...snapshot, windows: snapshot.windows.map((window) => ({ ...window,
+    tabs: window.tabs.map((tab) => ({ ...tab, panes: tab.panes.filter((pane) => pane.sessionId ? !activeIds.has(pane.sessionId) : !terminalIds.has(pane.terminalId)) })).filter((tab) => tab.panes.length),
+  })).filter((window) => window.tabs.length) };
+}
+
+function liveRestoreSelection(snapshot, missingOnly) {
+  const { files } = inspectProcesses();
+  let terminalIds = new Set();
+  try { terminalIds = new Set(panes({ windows: parseLayout(osascript(CAPTURE)) }).map((p) => p.terminalId)); }
+  catch (error) { if (error.code !== "NO_WINDOWS") throw error; }
+  return restoreSelection(snapshot, activeSessionIds(files), terminalIds, missingOnly);
+}
+
+async function restore(snapshot, missingOnly) {
+  const selected = liveRestoreSelection(snapshot, missingOnly);
+  if (!selected.windows.length) { console.log("All saved panes are already running."); return; }
+  for (const pane of panes(selected)) {
+    if (!statSync(pane.cwd).isDirectory()) throw new Error(`Saved directory is unavailable: ${pane.cwd}`);
+    if (pane.tool !== "shell" && sessionFromFile(pane.tool, pane.sessionFile)?.sessionId !== pane.sessionId) {
+      throw new Error(`Saved conversation is unavailable: ${pane.sessionId}`);
+    }
+  }
+  atomicJSON(statePath, { awaiting: sessionIds(snapshot) });
+  osascript(buildRestoreScript(selected));
+  const expected = new Set(sessionIds(snapshot));
+  const deadline = Date.now() + 30000;
+  let lastError;
+  do {
+    try {
+      const current = capture("latest");
+      const actual = new Set(sessionIds(current));
+      if ([...expected].every((id) => actual.has(id))) {
+        save(current);
+        atomicJSON(statePath, {});
+        atomicJSON(statusPath, { checkedAt: new Date().toISOString(), status: "current", reason: "Restore verified" });
+        console.log(`Restored ${selected.windows.length} window(s); verified ${expected.size} conversation(s).`);
+        return;
+      }
+    } catch (error) { lastError = error; }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  } while (Date.now() < deadline);
+  throw new Error(`Windows opened, but not all conversations resumed yet. Previous backup retained; check the new panes and retry restore --missing.${lastError ? ` ${lastError.message}` : ""}`);
+}
+
+function summarize(b) {
+  const lines = [];
+  let np = 0, na = 0;
+  b.windows.forEach((w, wi) => {
+    lines.push(`Window ${wi + 1}`);
+    w.tabs.forEach((t, idx) => {
+      lines.push(`  Tab ${idx + 1}${t.selected ? " *" : ""}: ${t.name}`);
+      for (const p of t.panes) {
+        np++;
+        if (p.tool !== "shell") na++;
+        const tag = p.tool === "shell" ? "shell" : `${p.tool}${p.sessionId ? " " + p.sessionId.slice(0, 8) : " (no id)"}`;
+        lines.push(`     - [${tag}] ${p.title || p.cwd}`);
+      }
+    });
+  });
+  lines.push(`\n${b.windows.length} window(s), ${np} pane(s), ${na} agent session(s).`);
+  return lines.join("\n");
+}
+
+// ---------- cli ----------
+async function main() {
+  const cmd = process.argv.includes("--help") ? "help" : process.argv[2];
+  const arg = process.argv[3];
+  const allowedFlags = cmd === "restore" ? ["--dry-run", "--missing"] : cmd === "status" ? ["--brief"] : ["--help"];
+  for (const flag of process.argv.slice(3).filter((arg) => arg.startsWith("--"))) {
+    if (!allowedFlags.includes(flag)) throw new Error(`Unsupported option for ${cmd}: ${flag}`);
+  }
+  const name = arg && !arg.startsWith("-") ? arg : "latest";
+  if (["backup", "auto-backup", "restore"].includes(cmd) && !process.argv.includes("--dry-run")) {
+    prepareStore(STORE);
+    if (!process.env.GHOSTTY_RESURRECT_LOCKED) {
+      const lock = join(STORE, ".lock");
+      closeSync(openSync(lock, "a", 0o600));
+      const automatic = cmd === "auto-backup";
+      const result = spawnSync("/usr/bin/lockf", ["-t", automatic ? "0" : "20", "-k", lock, process.execPath, __filename, ...process.argv.slice(2)], {
+        stdio: automatic ? "pipe" : "inherit", encoding: "utf8",
+        env: { ...process.env, GHOSTTY_RESURRECT_LOCKED: "1" },
+      });
+      if (result.error) throw result.error;
+      // Another writer owns this capture; the next scheduled run can try again.
+      if (automatic && result.status === 75) return;
+      if (automatic && result.stderr) process.stderr.write(result.stderr);
+      process.exitCode = result.status ?? 1;
+      return;
+    }
+    cleanInterruptedWrites(STORE);
+  }
+  if (cmd === "backup") {
+    const snapshot = capture(name);
+    save(snapshot);
+    if (name === "latest") {
+      atomicJSON(statePath, {});
+      atomicJSON(statusPath, { checkedAt: snapshot.savedAt, status: "current", reason: "Manual backup" });
+    }
+    console.log(summarize(snapshot));
+    console.log(`\nSaved: ${pathFor(name)}`);
+  } else if (cmd === "auto-backup") {
+    autoBackup();
+  } else if (cmd === "restore") {
+    const snapshot = load(name);
+    if (process.argv.includes("--dry-run")) console.log(buildRestoreScript(process.argv.includes("--missing") ? liveRestoreSelection(snapshot, true) : snapshot));
+    else await restore(snapshot, process.argv.includes("--missing"));
+  } else if (cmd === "list") {
+    if (!existsSync(STORE)) { console.log("No backups yet."); return; }
+    for (const file of readdirSync(STORE).filter((file) => !file.startsWith(".") && file.endsWith(".json"))) {
+      const snapshot = load(file.slice(0, -5));
+      console.log(`${snapshot.name}\t${snapshot.savedAt}\t${snapshot.windows.length} windows`);
+    }
+  } else if (cmd === "show") {
+    console.log(summarize(load(name)));
+  } else if (cmd === "status") {
+    const snapshot = readJSON(pathFor("latest"));
+    if (!snapshot) { if (!process.argv.includes("--brief")) console.log("No backup yet."); return; }
+    validateSnapshot(snapshot);
+    const status = readJSON(statusPath, {});
+    const pending = !sameInstance(snapshot.context, currentContext()) || status.recoveryPending;
+    const stale = Date.now() - Date.parse(status.checkedAt || snapshot.savedAt) > 90000;
+    if (process.argv.includes("--brief")) {
+      if (pending) console.log("Ghostty recovery available: run ghostty-resurrect restore --missing (or backup to replace the saved layout).");
+      else if (status.status === "error") console.log(`Ghostty automatic backup needs attention: ${status.reason}`);
+      else if (stale) console.log("Ghostty automatic backups are overdue; run ghostty-resurrect status and check the scheduled job.");
+      return;
+    }
+    console.log(`Last backup: ${snapshot.savedAt}; ${snapshot.windows.length} windows, ${sessionIds(snapshot).length} conversations.`);
+    console.log(pending ? "Recovery available: ghostty-resurrect restore --missing" : (status.reason || "Backup available"));
+    if (status.status === "error") console.log(`Automatic backup error: ${status.reason}`);
+    if (stale) console.log("Automatic checks are overdue; check the local.ghostty-resurrect LaunchAgent.");
+    if (status.checkedAt) console.log(`Last automatic/manual check: ${status.checkedAt}`);
+  } else {
+    console.log(`ghostty-resurrect: save and restore Ghostty conversations
+
+Usage:
+  ghostty-resurrect backup [name]            save current layout (default: latest)
+  ghostty-resurrect auto-backup              protected automatic backup
+  ghostty-resurrect restore [name]           reopen and verify saved conversations
+  ghostty-resurrect restore [name] --missing reopen only conversations not running
+  ghostty-resurrect restore [name] --dry-run print the restore script
+  ghostty-resurrect status [--brief]         check backup and recovery state
+  ghostty-resurrect show [name]              inspect a backup
+  ghostty-resurrect list                     list backups`);
+    if (cmd && !["--help", "help"].includes(cmd)) process.exitCode = 1;
+  }
+}
+
+module.exports = { capture, parseLayout, currentContext, resumeCmd, buildRestoreScript,
+  restoreSelection, activeSessionIds, summarize, CAPTURE };
+if (require.main === module) {
+  main().catch((error) => {
+    if (process.argv[2] === "auto-backup" && process.env.GHOSTTY_RESURRECT_LOCKED) {
+      try { atomicJSON(statusPath, { checkedAt: new Date().toISOString(), status: "error", reason: error.message }); } catch (_) {}
+    }
+    console.error(error.message);
+    process.exitCode = 1;
+  });
+}

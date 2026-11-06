@@ -1645,6 +1645,11 @@ if [[ "$LINK_DOTFILES" == true ]]; then
   fi # end vault-dependent linking
 
   echo "Dotfiles linked"
+  if [[ -d /Applications/Ghostty.app ]] && command -v node >/dev/null 2>&1; then
+    if ! "$SCRIPT_DIR/setup-ghostty-recovery.sh"; then
+      echo "Ghostty recovery needs attention. Rerun ./setup-ghostty-recovery.sh after resolving the reported prerequisite."
+    fi
+  fi
 fi
 
 # Configure integrations after linking so they update the shared agent configuration.
