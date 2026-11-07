@@ -76,6 +76,8 @@ The macOS and Debian setup scripts also offer to install zvec-grep (`zg`) global
 
 All three scripts can register Todoist's hosted MCP server (`https://ai.todoist.net/mcp`) with Claude Code at user scope: macOS and Debian prompt for it, Windows does it whenever the `claude` CLI is present. The registration lives in `~/.claude.json` and the OAuth grant is stored locally, neither of which syncs between machines, so after setup run `/mcp` inside Claude Code once per machine to sign in.
 
+The macOS script can install [MCP Agent Mail](https://github.com/Dicklesworthstone/mcp_agent_mail_rust), a local coordination server for coding agents, on `127.0.0.1:8765`. It downloads a pinned release and verifies its minisign-signed checksums itself rather than running the upstream installer, which fails on macOS and rewrites every agent config it finds. Each machine gets its own bearer token in `~/.config/mcp-agent-mail/environment.sh` (mode `0600`, generated from [`agent-mail/environment.sh.in`](agent-mail/environment.sh.in)). The `com.agent-mail` LaunchAgent and [`agent-mail/http-headers.sh`](agent-mail/http-headers.sh) read the token from that file, so neither this repo nor the vault holds it: Claude Code is registered with the helper as its `headersHelper`, and the vault-shared Codex config points `http_headers_helper` at the same script through `$HOME`. Each machine runs a separate mailbox.
+
 ### Bootstrap on a new machine
 
 ```

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.agent-mail</string>
+  <!-- Load the owner-only environment file at start so the bearer token never
+       appears in this plist. Paths resolve from $HOME, so the file is portable. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>. "$HOME/.config/mcp-agent-mail/environment.sh" &amp;&amp; exec "$HOME/.local/bin/mcp-agent-mail" serve --no-tui &gt;&gt;"$HOME/.local/share/mcp-agent-mail/server.log" 2&gt;&amp;1</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+</dict>
+</plist>

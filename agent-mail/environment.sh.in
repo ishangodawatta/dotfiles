@@ -1,0 +1,24 @@
+# Agent Mail server environment for this Mac. Holds the local bearer token;
+# keep owner-only (0600) and never copy into the vault or dotfiles.
+export STORAGE_ROOT="$HOME/.local/share/mcp-agent-mail/data"
+export DATABASE_URL="sqlite:///$HOME/.local/share/mcp-agent-mail/data/storage.sqlite3"
+export HTTP_HOST='127.0.0.1'
+export HTTP_PORT='8765'
+export HTTP_PATH='/mcp/'
+export HTTP_BEARER_TOKEN='__HTTP_BEARER_TOKEN__'
+export HTTP_ALLOW_LOCALHOST_UNAUTHENTICATED='false'
+export APP_ENVIRONMENT='production'
+export LLM_ENABLED='false'
+export AM_SEARCH_SEMANTIC_ENABLED='false'
+export AM_ATC_ENABLED='false'
+export NOTIFICATIONS_ENABLED='false'
+export AM_CACHE_PROFILE='conservative'
+export AM_BACKUP_KEEP_COUNT='1'
+export AM_BACKUP_ROTATION_DELETE='true'
+export LOG_LEVEL='warn'
+export LOG_TOOL_CALLS_ENABLED='false'
+export TUI_ENABLED='false'
+export XDG_CACHE_HOME="$HOME/.local/share/mcp-agent-mail/cache"
+export XDG_DATA_HOME="$HOME/.local/share/mcp-agent-mail/state"
+export XDG_STATE_HOME="$HOME/.local/share/mcp-agent-mail/state"
+export TMPDIR="$HOME/.local/share/mcp-agent-mail/tmp"

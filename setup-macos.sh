@@ -106,6 +106,7 @@ INSTALL_ZVEC_GREP=false
 CONFIGURE_ZVEC_GREP=false
 INSTALL_CLAUDE_CODE=false
 REGISTER_TODOIST_MCP=false
+INSTALL_AGENT_MAIL=false
 INSTALL_PYENV=false
 INSTALL_PYTHON=false
 INSTALL_LUNAR=false
@@ -785,6 +786,15 @@ if [[ "$INSTALL_CLAUDE_CODE" == true ]] || command -v claude &>/dev/null; then
   if prompt_yes_no "Register the Todoist MCP server with Claude Code?"; then
     REGISTER_TODOIST_MCP=true
   fi
+fi
+
+# MCP Agent Mail (local coordination server for coding agents)
+if [[ ! -x "$HOME/.local/bin/mcp-agent-mail" ]]; then
+  if prompt_yes_no "Install MCP Agent Mail (local agent coordination server)?"; then
+    INSTALL_AGENT_MAIL=true
+  fi
+else
+  echo "✅ MCP Agent Mail already installed: $("$HOME/.local/bin/mcp-agent-mail" --version 2>/dev/null)"
 fi
 
 # Check Bitwarden CLI
@@ -1672,6 +1682,86 @@ if [[ "$REGISTER_TODOIST_MCP" == true ]]; then
     echo "Registering Todoist MCP server with Claude Code..."
     claude mcp add --scope user --transport http todoist https://ai.todoist.net/mcp
     echo "Todoist MCP server registered. Run /mcp inside Claude Code to sign in."
+  fi
+fi
+
+# MCP Agent Mail. The upstream install.sh is not used: its installer lock
+# compares a directory's identity with the same directory opened through
+# /dev/fd, which reports a different device on macOS, so it always fails with
+# "Another installer is running". It also rewrites every agent config it finds,
+# including the vault-shared ~/.codex/config.toml. Instead, download the pinned
+# release and verify its minisign-signed SHA256SUMS directly.
+#
+# The bearer token lives only in ~/.config/mcp-agent-mail/environment.sh (0600).
+# The LaunchAgent and the shared Codex entry load it through that file and
+# http-headers.sh, so neither the vault nor this repo ever holds the token.
+if [[ "$INSTALL_AGENT_MAIL" == true ]]; then
+  AGENT_MAIL_VERSION="v0.3.40"
+  # Release signing key embedded in the upstream install.sh (signing epoch 2).
+  AGENT_MAIL_MINISIGN_KEY="RWTQGPeLsnm9G7VFdFWkkcRi3wJK/PqsYxWC+oLNN74W9IjBxRU1Xu70"
+  AGENT_MAIL_SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  AGENT_MAIL_CONFIG="$HOME/.config/mcp-agent-mail"
+  AGENT_MAIL_DATA="$HOME/.local/share/mcp-agent-mail"
+  AGENT_MAIL_PLIST="$HOME/Library/LaunchAgents/com.agent-mail.plist"
+
+  case "$(uname -m)" in
+    arm64) AGENT_MAIL_TARGET="aarch64-apple-darwin" ;;
+    x86_64) AGENT_MAIL_TARGET="x86_64-apple-darwin" ;;
+    *) AGENT_MAIL_TARGET="" ;;
+  esac
+
+  if [[ -z "$AGENT_MAIL_TARGET" ]]; then
+    echo "Unsupported architecture for MCP Agent Mail: $(uname -m)"
+  else
+    echo "Installing MCP Agent Mail $AGENT_MAIL_VERSION..."
+    command -v minisign >/dev/null 2>&1 || brew install minisign
+    AGENT_MAIL_TMP="$(mktemp -d)"
+    AGENT_MAIL_ARCHIVE="mcp-agent-mail-${AGENT_MAIL_TARGET}.tar.xz"
+    AGENT_MAIL_BASE="https://github.com/Dicklesworthstone/mcp_agent_mail_rust/releases/download/${AGENT_MAIL_VERSION}"
+    if curl -fsSL -o "$AGENT_MAIL_TMP/$AGENT_MAIL_ARCHIVE" "$AGENT_MAIL_BASE/$AGENT_MAIL_ARCHIVE" \
+      && curl -fsSL -o "$AGENT_MAIL_TMP/SHA256SUMS" "$AGENT_MAIL_BASE/SHA256SUMS" \
+      && curl -fsSL -o "$AGENT_MAIL_TMP/SHA256SUMS.minisig" "$AGENT_MAIL_BASE/SHA256SUMS.minisig" \
+      && minisign -Vqm "$AGENT_MAIL_TMP/SHA256SUMS" -P "$AGENT_MAIL_MINISIGN_KEY" \
+      && (cd "$AGENT_MAIL_TMP" && grep " ${AGENT_MAIL_ARCHIVE}\$" SHA256SUMS | shasum -a 256 -c -) \
+      && tar -xJf "$AGENT_MAIL_TMP/$AGENT_MAIL_ARCHIVE" -C "$AGENT_MAIL_TMP" mcp-agent-mail am; then
+      mkdir -p "$HOME/.local/bin"
+      install -m 0755 "$AGENT_MAIL_TMP/mcp-agent-mail" "$AGENT_MAIL_TMP/am" "$HOME/.local/bin/"
+
+      # Owner-only directories: the config holds the token, the data holds mail.
+      (umask 077; mkdir -p "$AGENT_MAIL_CONFIG" "$AGENT_MAIL_DATA"/{data,cache,state,tmp})
+      chmod 700 "$AGENT_MAIL_CONFIG" "$AGENT_MAIL_DATA"
+      if [[ ! -f "$AGENT_MAIL_CONFIG/environment.sh" ]]; then
+        (umask 077
+         sed "s/__HTTP_BEARER_TOKEN__/$(openssl rand -hex 32)/" \
+           "$AGENT_MAIL_SRC/agent-mail/environment.sh.in" > "$AGENT_MAIL_CONFIG/environment.sh")
+        echo "Generated a new local Agent Mail bearer token"
+      else
+        echo "Keeping existing $AGENT_MAIL_CONFIG/environment.sh and its token"
+      fi
+      chmod 600 "$AGENT_MAIL_CONFIG/environment.sh"
+      install -m 0700 "$AGENT_MAIL_SRC/agent-mail/http-headers.sh" "$AGENT_MAIL_CONFIG/http-headers.sh"
+
+      mkdir -p "$HOME/Library/LaunchAgents"
+      launchctl bootout "gui/$(id -u)" "$AGENT_MAIL_PLIST" 2>/dev/null || true
+      cp "$AGENT_MAIL_SRC/launchagents/com.agent-mail.plist" "$AGENT_MAIL_PLIST"
+      launchctl bootstrap "gui/$(id -u)" "$AGENT_MAIL_PLIST"
+
+      # Claude Code runs the helper for each connection, so ~/.claude.json
+      # stores only the helper path. Codex uses the vault-shared entry in
+      # codex-config.toml, which resolves the same helper from $HOME.
+      if command -v claude >/dev/null 2>&1; then
+        if claude mcp get agent_mail &>/dev/null; then
+          echo "agent_mail MCP server already registered with Claude Code"
+        else
+          claude mcp add-json --scope user agent_mail \
+            "{\"type\":\"http\",\"url\":\"http://127.0.0.1:8765/mcp/\",\"headersHelper\":\"$AGENT_MAIL_CONFIG/http-headers.sh\"}"
+        fi
+      fi
+      echo "✅ MCP Agent Mail installed and running on 127.0.0.1:8765"
+    else
+      echo "MCP Agent Mail download or signature verification failed; nothing installed"
+    fi
+    rm -rf "$AGENT_MAIL_TMP"
   fi
 fi
 
